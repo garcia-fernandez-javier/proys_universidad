@@ -1,0 +1,280 @@
+% ══════════════════════════════════════════════════════════════════════════════
+%  referencias.bib — Bibliografía del proyecto de Retinopatía Diabética
+%  Estilo: IEEE (ver biblatex en main.tex)
+% ══════════════════════════════════════════════════════════════════════════════
+
+% ── Epidemiología ────────────────────────────────────────────────────────────
+@misc{idf2023,
+  author       = {{International Diabetes Federation}},
+  title        = {{IDF Diabetes Atlas, 10th edition}},
+  year         = {2023},
+  howpublished = {\url{https://diabetesatlas.org/}},
+  note         = {Accedido en abril de 2026}
+}
+
+@misc{who2023,
+  author       = {{World Health Organization}},
+  title        = {{Diabetes --- Key facts}},
+  year         = {2023},
+  howpublished = {\url{https://www.who.int/news-room/fact-sheets/detail/diabetes}},
+  note         = {Accedido en abril de 2026}
+}
+
+% ── Métodos clásicos ─────────────────────────────────────────────────────────
+@article{abramoff2010,
+  author  = {Abr{\`a}moff, Michael D. and Garvin, Mona K. and Sonka, Milan},
+  title   = {Retinal Imaging and Image Analysis},
+  journal = {IEEE Reviews in Biomedical Engineering},
+  volume  = {3},
+  pages   = {169--208},
+  year    = {2010},
+  doi     = {10.1109/RBME.2010.2084567}
+}
+
+@article{vangriethuysen2017,
+  author  = {van Griethuysen, Joost J. M. and Fedorov, Andriy and Parmar, Chintan
+             and Hosny, Ahmed and Aucoin, Nicole and Narayan, Vivek and
+             Beets-Tan, Regina G. H. and Fillion-Robin, Jean-Christophe and
+             Pieper, Steve and Aerts, Hugo J. W. L.},
+  title   = {Computational Radiomics System to Decode the Radiographic Phenotype},
+  journal = {Cancer Research},
+  volume  = {77},
+  number  = {21},
+  pages   = {e104--e107},
+  year    = {2017},
+  doi     = {10.1158/0008-5472.CAN-17-0339}
+}
+
+% ── CNN profundas para RD ────────────────────────────────────────────────────
+@article{gulshan2016,
+  author  = {Gulshan, Varun and Peng, Lily and Coram, Marc and others},
+  title   = {Development and Validation of a Deep Learning Algorithm for
+             Detection of Diabetic Retinopathy in Retinal Fundus Photographs},
+  journal = {JAMA},
+  volume  = {316},
+  number  = {22},
+  pages   = {2402--2410},
+  year    = {2016},
+  doi     = {10.1001/jama.2016.17216}
+}
+
+@article{ting2017,
+  author  = {Ting, Daniel Shu Wei and Cheung, Carol Yim-Lui and Lim, Gilbert
+             and others},
+  title   = {Development and Validation of a Deep Learning System for Diabetic
+             Retinopathy and Related Eye Diseases Using Retinal Images From
+             Multiethnic Populations With Diabetes},
+  journal = {JAMA},
+  volume  = {318},
+  number  = {22},
+  pages   = {2211--2223},
+  year    = {2017},
+  doi     = {10.1001/jama.2017.18152}
+}
+
+@inproceedings{szegedy2016inception,
+  author    = {Szegedy, Christian and Vanhoucke, Vincent and Ioffe, Sergey and
+               Shlens, Jonathon and Wojna, Zbigniew},
+  title     = {Rethinking the {Inception} Architecture for Computer Vision},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {2818--2826},
+  year      = {2016},
+  doi       = {10.1109/CVPR.2016.308}
+}
+
+@inproceedings{he2016resnet,
+  author    = {He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
+  title     = {Deep Residual Learning for Image Recognition},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {770--778},
+  year      = {2016},
+  doi       = {10.1109/CVPR.2016.90}
+}
+
+@inproceedings{tan2019efficientnet,
+  author    = {Tan, Mingxing and Le, Quoc V.},
+  title     = {{EfficientNet}: Rethinking Model Scaling for Convolutional Neural
+               Networks},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {6105--6114},
+  year      = {2019}
+}
+
+% ── Datasets ─────────────────────────────────────────────────────────────────
+@misc{kaggledr2015,
+  author       = {{California Healthcare Foundation}},
+  title        = {{Diabetic Retinopathy Detection}},
+  year         = {2015},
+  howpublished = {\url{https://www.kaggle.com/c/diabetic-retinopathy-detection}},
+  note         = {Competición Kaggle}
+}
+
+@misc{aptos2019,
+  author       = {{Asia Pacific Tele-Ophthalmology Society}},
+  title        = {{APTOS 2019 Blindness Detection}},
+  year         = {2019},
+  howpublished = {\url{https://www.kaggle.com/c/aptos2019-blindness-detection}},
+  note         = {Competición Kaggle, licencia CC BY 4.0}
+}
+
+% ── Ben Graham preprocessing ────────────────────────────────────────────────
+@misc{graham2015,
+  author       = {Graham, Ben},
+  title        = {{Kaggle Diabetic Retinopathy Detection competition report}},
+  year         = {2015},
+  howpublished = {\url{https://kaggle.com/c/diabetic-retinopathy-detection/discussion/15801}},
+  note         = {Solución ganadora, primer puesto}
+}
+
+% ── MONAI ────────────────────────────────────────────────────────────────────
+@article{cardoso2022monai,
+  author  = {Cardoso, M. Jorge and Li, Wenqi and Brown, Richard and others},
+  title   = {{MONAI: An Open-Source Framework for Deep Learning in Healthcare}},
+  journal = {arXiv preprint arXiv:2211.02701},
+  year    = {2022},
+  url     = {https://arxiv.org/abs/2211.02701}
+}
+
+% ── Regresión ordinal y optimización ────────────────────────────────────────
+@inproceedings{beckham2017ordinal,
+  author    = {Beckham, Christopher and Pal, Christopher},
+  title     = {Unimodal Probability Distributions for Deep Ordinal Classification},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {411--419},
+  year      = {2017}
+}
+
+@article{nelder1965simplex,
+  author  = {Nelder, John A. and Mead, Roger},
+  title   = {A simplex method for function minimization},
+  journal = {The Computer Journal},
+  volume  = {7},
+  number  = {4},
+  pages   = {308--313},
+  year    = {1965},
+  doi     = {10.1093/comjnl/7.4.308}
+}
+
+% ── CLIP y BiomedCLIP ────────────────────────────────────────────────────────
+@inproceedings{radford2021clip,
+  author    = {Radford, Alec and Kim, Jong Wook and Hallacy, Chris and Ramesh,
+               Aditya and Goh, Gabriel and Agarwal, Sandhini and Sastry, Girish
+               and Askell, Amanda and Mishkin, Pamela and Clark, Jack and
+               Krueger, Gretchen and Sutskever, Ilya},
+  title     = {Learning Transferable Visual Models From Natural Language Supervision},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {8748--8763},
+  year      = {2021}
+}
+
+@article{zhang2023biomedclip,
+  author  = {Zhang, Sheng and Xu, Yanbo and Usuyama, Naoto and Xu, Hanwen and
+             Bagga, Jaspreet and Tinn, Robert and Preston, Sam and Rao, Rajesh
+             and Wei, Mu and Valluri, Naveen and others},
+  title   = {{BiomedCLIP}: a multimodal biomedical foundation model pretrained
+             from fifteen million scientific image-text pairs},
+  journal = {arXiv preprint arXiv:2303.00915},
+  year    = {2023},
+  url     = {https://arxiv.org/abs/2303.00915}
+}
+
+% ── Interpretabilidad y shortcut learning ───────────────────────────────────
+@inproceedings{selvaraju2017gradcam,
+  author    = {Selvaraju, Ramprasaath R. and Cogswell, Michael and Das, Abhishek
+               and Vedantam, Ramakrishna and Parikh, Devi and Batra, Dhruv},
+  title     = {{Grad-CAM}: Visual Explanations from Deep Networks via
+               Gradient-based Localization},
+  booktitle = {IEEE International Conference on Computer Vision (ICCV)},
+  pages     = {618--626},
+  year      = {2017},
+  doi       = {10.1109/ICCV.2017.74}
+}
+
+@article{geirhos2020shortcut,
+  author  = {Geirhos, Robert and Jacobsen, J{\"o}rn-Henrik and Michaelis,
+             Claudio and Zemel, Richard and Brendel, Wieland and Bethge,
+             Matthias and Wichmann, Felix A.},
+  title   = {Shortcut Learning in Deep Neural Networks},
+  journal = {Nature Machine Intelligence},
+  volume  = {2},
+  number  = {11},
+  pages   = {665--673},
+  year    = {2020},
+  doi     = {10.1038/s42256-020-00257-z}
+}
+
+% ── LightGBM ─────────────────────────────────────────────────────────────────
+@inproceedings{ke2017lightgbm,
+  author    = {Ke, Guolin and Meng, Qi and Finley, Thomas and Wang, Taifeng and
+               Chen, Wei and Ma, Weidong and Ye, Qiwei and Liu, Tie-Yan},
+  title     = {{LightGBM}: A Highly Efficient Gradient Boosting Decision Tree},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  volume    = {30},
+  pages     = {3146--3154},
+  year      = {2017}
+}
+
+% ── Signos clínicos y escala ICDR ────────────────────────────────────────────
+@article{wilkinson2003icdr,
+  author  = {Wilkinson, C. P. and Ferris, Frederick L. and Klein, Ronald E. and
+             Lee, Paul P. and Agardh, Carl David and Davis, Matthew and
+             Dills, Diana and Kampik, Anselm and Pararajasegaram, R. and
+             Verdaguer, Juan T.},
+  title   = {Proposed International Clinical Diabetic Retinopathy and Diabetic
+             Macular Edema Disease Severity Scales},
+  journal = {Ophthalmology},
+  volume  = {110},
+  number  = {9},
+  pages   = {1677--1682},
+  year    = {2003},
+  doi     = {10.1016/S0161-6420(03)00475-5}
+}
+
+% ── Métricas ─────────────────────────────────────────────────────────────────
+@article{cohen1968weightedkappa,
+  author  = {Cohen, Jacob},
+  title   = {Weighted kappa: Nominal scale agreement provision for scaled
+             disagreement or partial credit},
+  journal = {Psychological Bulletin},
+  volume  = {70},
+  number  = {4},
+  pages   = {213--220},
+  year    = {1968},
+  doi     = {10.1037/h0026256}
+}
+
+@article{sokolova2009metrics,
+  author  = {Sokolova, Marina and Lapalme, Guy},
+  title   = {A systematic analysis of performance measures for classification
+             tasks},
+  journal = {Information Processing \& Management},
+  volume  = {45},
+  number  = {4},
+  pages   = {427--437},
+  year    = {2009},
+  doi     = {10.1016/j.ipm.2009.03.002}
+}
+
+% ── Radiómica (review clásico) ───────────────────────────────────────────────
+@article{gillies2016radiomics,
+  author  = {Gillies, Robert J. and Kinahan, Paul E. and Hricak, Hedvig},
+  title   = {Radiomics: Images Are More than Pictures, They Are Data},
+  journal = {Radiology},
+  volume  = {278},
+  number  = {2},
+  pages   = {563--577},
+  year    = {2016},
+  doi     = {10.1148/radiol.2015151169}
+}
+
+% ── Regresión ordinal (CORAL/CORN) ───────────────────────────────────────────
+@article{cao2020rank,
+  author  = {Cao, Wenzhi and Mirjalili, Vahid and Raschka, Sebastian},
+  title   = {Rank consistent ordinal regression for neural networks with
+             application to age estimation},
+  journal = {Pattern Recognition Letters},
+  volume  = {140},
+  pages   = {325--331},
+  year    = {2020},
+  doi     = {10.1016/j.patrec.2020.11.008}
+}

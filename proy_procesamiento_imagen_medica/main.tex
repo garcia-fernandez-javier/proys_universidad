@@ -1,0 +1,383 @@
+\documentclass[12pt, a4paper]{article}
+
+% ── Codificación y lengua ─────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+
+% ── Tipografía y diseño ───────────────────────────────────────────────────────
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+\geometry{
+  a4paper,
+  top=2.5cm, bottom=2.5cm,
+  left=3cm,  right=2.5cm
+}
+\usepackage{setspace}
+\onehalfspacing
+
+% ── Sangría en todos los párrafos (incluido el primero de cada sección) ───────
+\usepackage{indentfirst}
+\setlength{\parindent}{1.5em}
+\setlength{\parskip}{4pt}
+
+% ── Colores (solo para elementos decorativos, no para texto) ──────────────────
+\usepackage[dvipsnames]{xcolor}
+\definecolor{azuloscuro}{RGB}{31, 56, 100}
+\definecolor{azulmedio}{RGB}{46, 117, 182}
+\definecolor{grisclaro}{RGB}{245, 245, 245}
+\definecolor{amarillotodo}{RGB}{255, 243, 205}
+
+% ── Encabezados y secciones (texto en negro) ──────────────────────────────────
+\usepackage{titlesec}
+\titleformat{\section}
+  {\large\bfseries}{{\thesection.}}{0.6em}{}
+  [\vspace{-4pt}\color{azulmedio}\rule{\linewidth}{1pt}\vspace{2pt}]
+\titleformat{\subsection}
+  {\normalsize\bfseries}{{\thesubsection.}}{0.5em}{}
+\titleformat{\subsubsection}
+  {\normalsize\itshape}{{\thesubsubsection.}}{0.5em}{}
+\titlespacing{\section}{0pt}{18pt}{8pt}
+\titlespacing{\subsection}{0pt}{12pt}{4pt}
+
+% ── Encabezado y pie de página ────────────────────────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textit{Clasificación Automática de Retinopatía Diabética}}
+\fancyhead[R]{\small\textit{PIM --- Curso 2025/2026}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\setlength{\headheight}{14.5pt}
+
+% ── Tablas ────────────────────────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{colortbl}
+
+% ── Figuras ───────────────────────────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\captionsetup{
+  font=small,
+  labelfont=bf,
+  labelsep=period
+}
+
+% ── Matemáticas ───────────────────────────────────────────────────────────────
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ── Listas ────────────────────────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{itemsep=2pt, topsep=4pt}
+\setlist[enumerate]{itemsep=2pt, topsep=4pt}
+
+% ── Hipervínculos y referencias ───────────────────────────────────────────────
+\usepackage[
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=black,
+  urlcolor=black,
+  pdftitle={Clasificación Automática de Retinopatía Diabética},
+  pdfauthor={García Fernández, Véliz Ayala, Solano Martínez},
+]{hyperref}
+\usepackage[style=ieee, sorting=none]{biblatex}
+\addbibresource{referencias.bib}
+
+% ── Otros ─────────────────────────────────────────────────────────────────────
+\usepackage{tocbibind}
+\usepackage{xspace}
+
+% ── Comandos propios ──────────────────────────────────────────────────────────
+\newcommand{\kappados}{$\kappa^2$\xspace}
+
+% Caja amarilla para marcar contenido pendiente (texto en negro)
+\newcommand{\pendiente}[1]{%
+  \vspace{4pt}%
+  \colorbox{amarillotodo}{%
+    \parbox{\dimexpr\linewidth-2\fboxsep}{%
+      \small\itshape%
+      $\blacktriangleright$ \textbf{[PENDIENTE]:} #1%
+    }%
+  }%
+  \vspace{4pt}%
+}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+\pagenumbering{gobble}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  PORTADA
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{titlepage}
+  \centering
+
+  \begin{minipage}{\textwidth}
+    \color{azuloscuro}\rule{\textwidth}{4pt}
+  \end{minipage}
+
+  \vspace{2.5cm}
+
+  {\Huge\bfseries
+    Clasificación Automática de\\[6pt]
+    Retinopatía Diabética
+  }
+
+  \vspace{0.5cm}
+  {\large\itshape
+    Pipeline Completo de Clasificación por Gradación de Severidad
+  }
+
+  \vspace{0.4cm}
+  \color{azulmedio}\rule{0.6\textwidth}{1.5pt}\color{black}
+
+  \vspace{2cm}
+
+  \begin{tabular}{rl}
+    \textbf{Asignatura:}       & Procesamiento y Análisis de Imagen Médica (PIM) \\[4pt]
+    \textbf{Curso académico:}  & 2025 -- 2026 \\[4pt]
+    \textbf{Fecha de entrega:} & 24 de abril de 2026 \\
+  \end{tabular}
+
+  \vspace{2cm}
+
+  {\large\bfseries Integrantes del grupo}\\[0.6cm]
+  \begin{tabular}{c}
+    Javier García Fernández    \\[4pt]
+    Miguel Ángel Véliz Ayala  \\[4pt]
+    Martín Solano Martínez     \\
+  \end{tabular}
+
+  \vfill
+
+  \begin{minipage}{\textwidth}
+    \color{azuloscuro}\rule{\textwidth}{4pt}
+  \end{minipage}
+
+\end{titlepage}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  RESUMEN
+% ══════════════════════════════════════════════════════════════════════════════
+\newpage
+\pagenumbering{roman}
+
+\phantomsection
+\section*{Resumen}
+\addcontentsline{toc}{section}{Resumen}
+
+Este trabajo aborda la clasificación automática de la retinopatía diabética (RD) en
+cinco grados de severidad clínica ---desde grado~0 (sin RD) hasta grado~4
+(proliferativa)--- a partir del dataset público APTOS~2019. Se construye un pipeline
+completo basado en EfficientNetBN-B3 (MONAI) con preprocesamiento específico para
+retinografías mediante máscara circular y CLAHE, y se diseñan y comparan diez
+experimentos que abordan las principales limitaciones del modelo base: desbalance de
+clases~(Exp.~A), radiómica cuantitativa con PyRadiomics~(Exp.~B), clasificación
+zero-shot con BiomedCLIP~(Exp.~C), pipelines jerárquicos~(Exp.~D y E), regresión
+ordinal a 384~px con optimización de umbrales~(Exp.~F), corrección de
+\textit{shortcut learning} mediante preprocesado Ben~Graham~(Exp.~G), fusión
+multimodal CNN\,+\,radiómica con LightGBM~(Exp.~I) y preentrenamiento en
+APTOS~2015~(Exp.~J). La métrica principal es el kappa cuadrático ponderado~($\kappa^2$),
+estándar en la literatura de gradación automática de RD. Esta métrica no solo mide acierto, sino que penaliza más los errores graves que los leves, teniendo en cuenta el orden entre clases. Los resultados completos y el análisis comparativo de todos los experimentos se presentan en la Sección~4.
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  ÍNDICE
+% ══════════════════════════════════════════════════════════════════════════════
+\newpage
+\phantomsection
+\tableofcontents
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  CUERPO DEL DOCUMENTO
+% ══════════════════════════════════════════════════════════════════════════════
+\newpage
+\pagenumbering{arabic}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  1. INTRODUCCIÓN
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Introducción}
+
+La \textbf{retinopatía diabética} (RD) es una complicación microvascular de la
+diabetes mellitus y una de las principales causas de ceguera prevenible en el mundo.
+Con más de 540 millones de adultos diabéticos estimados en 2023 y una prevalencia
+de afectación retiniana en torno al 35\,\% de los pacientes~\cite{idf2023,who2023},
+el cribado masivo mediante retinografías de fondo de ojo es una necesidad clínica
+de primer orden. Sin embargo, la revisión manual de miles de imágenes por
+oftalmólogos resulta inviable a gran escala, lo que motiva el desarrollo de sistemas
+automáticos de gradación. Además, estos sistemas no solo permiten escalar el
+cribado, sino que también facilitan y agilizan el trabajo del personal sanitario,
+sirviendo como herramienta de apoyo en la clasificación de la enfermedad y en la
+toma de decisiones clínicas. En este contexto, se emplea el dataset público APTOS~2019, ampliamente utilizado en la literatura, que contiene retinografías etiquetadas según el grado de severidad de la enfermedad, lo que permite evaluar de forma objetiva el rendimiento de los modelos propuestos.
+
+La enfermedad progresa en cinco estadios (Tabla~\ref{tab:grados}): desde la ausencia
+de lesiones (G0) hasta la neovascularización proliferativa con riesgo de ceguera súbita
+(G4), pasando por microaneurismas aislados (G1), hemorragias y exudados duros (G2) y
+afectación vascular extensa en los cuatro cuadrantes (G3). Esta naturaleza ordinal del
+problema, junto con el severo desbalance de clases del dataset ---G0 representa
+$\sim$49\,\% del entrenamiento frente al $\sim$5\,\% de G3---, la ambigüedad entre
+grados adyacentes, la pérdida de detalles finos al comprimir las imágenes a baja
+resolución y el riesgo de \textit{shortcut learning} sobre artefactos de adquisición,
+conforman los desafíos técnicos que este proyecto aborda de forma sistemática.
+
+\begin{table}[H]
+  \centering
+  \caption{Escala de severidad de la retinopatía diabética.}
+  \label{tab:grados}
+  \begin{tabularx}{0.9\textwidth}{c l X}
+    \toprule
+    \rowcolor{azuloscuro!15}
+    \textbf{Grado} & \textbf{Nombre} & \textbf{Características clínicas} \\
+    \midrule
+    0 & Sin RD        & Fondo de ojo normal. Sin lesiones visibles. \\
+    \rowcolor{grisclaro}
+    1 & Leve          & Microaneurismas aislados. \\
+    2 & Moderada      & Hemorragias, exudados duros y anomalías vasculares. \\
+    \rowcolor{grisclaro}
+    3 & Severa        & Múltiples hemorragias, \textit{venous beading} e IRMA
+                        en los cuatro cuadrantes. \\
+    4 & Proliferativa & Neovascularización con riesgo de hemorragia vítrea
+                        y desprendimiento de retina. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\newpage
+
+El objetivo del proyecto es construir un pipeline reproducible y clínicamente
+interpretable que parta de un baseline sólido (EfficientNetBN-B3, APTOS~2019,
+224~px) y lo mejore de forma justificada mediante diez experimentos que atacan
+cada una de las debilidades identificadas. Para ello, se emplea el dataset público
+APTOS~2019, compuesto por retinografías etiquetadas en cinco grados de severidad,
+lo que permite abordar el problema en un entorno realista y con datos clínicamente
+relevantes. La métrica principal es el
+\textbf{kappa cuadrático ponderado}~($\kappa^2$), que penaliza los errores
+proporcionalmente al cuadrado de la distancia ordinal entre grados, alineándose
+con la relevancia clínica de cada tipo de error. La elección de la RD como
+problema de estudio responde, además, a la disponibilidad de datos públicos de
+calidad (licencia CC~BY~4.0) y a que su naturaleza permite aplicar directamente
+las técnicas del curso: preprocesamiento de imagen médica, aprendizaje profundo
+con MONAI, radiómica cuantitativa e interpretabilidad con Grad-CAM.
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=\textwidth]{figura1.png}
+  \caption{Retinografías representativas por grado de severidad (G0--G4).
+    Las diferencias entre grados adyacentes son sutiles, lo que dificulta
+    la gradación manual a gran escala.}
+  \label{fig:grados}
+\end{figure}
+
+El resto del documento se organiza del siguiente modo: la Sección~\ref{sec:arte}
+revisa el estado del arte; la Sección~\ref{sec:metodologia} describe los objetivos,
+el dataset y el pipeline; la Sección~\ref{sec:resultados} presenta los resultados;
+y la Sección~\ref{sec:conclusiones} recoge las conclusiones y vías futuras.
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  2. ESTADO DEL ARTE
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Estado del arte}
+\label{sec:arte}
+
+\pendiente{Sección a cargo de Miguel Ángel y/o Martín.\\
+  Estructura sugerida: (2.1) métodos clásicos basados en segmentación y radiómica,
+  (2.2) redes convolucionales profundas para gradación de RD, (2.3) modelos
+  visión-lenguaje y zero-shot, (2.4) radiómica y fusión multimodal.\\
+  Referencias clave: Gulshan et al.\ (2016), Tan \& Le EfficientNet (2019),
+  BiomedCLIP Zhang et al.\ (2023), Ting et al.\ (2017).}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  3. OBJETIVOS Y METODOLOGÍA
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Objetivos y metodología}
+\label{sec:metodologia}
+
+\pendiente{Sección a cargo del grupo.\\
+  Incluir: (3.1) objetivos concretos y medibles, (3.2) descripción del dataset
+  APTOS~2019 y APTOS~2015 (fuente, tamaño, modalidad, licencia, distribución de
+  clases), (3.3) diagrama del pipeline con justificación de cada decisión de diseño
+  (máscara circular, CLAHE, Ben~Graham, EfficientNetBN-B3, regresión ordinal, etc.),
+  (3.4) tabla resumen de los diez experimentos.}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  4. RESULTADOS
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Resultados}
+\label{sec:resultados}
+
+\pendiente{Rellenar la tabla y el análisis con los valores de $\kappa^2$ y F1 macro
+  obtenidos en la ejecución del notebook (Baseline, Exp.~A--G, I y J).}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  5. CONCLUSIONES Y VÍAS FUTURAS
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Conclusiones y vías futuras}
+\label{sec:conclusiones}
+
+\pendiente{Sección a cargo del grupo.\\
+  Incluir: (5.1) hallazgos principales (qué experimento gana y por qué),
+  (5.2) limitaciones honestas del trabajo, (5.3) mejoras concretas y líneas futuras.}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  BIBLIOGRAFÍA
+% ══════════════════════════════════════════════════════════════════════════════
+\newpage
+\printbibliography[heading=bibintoc, title={Bibliografía}]
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  ANEXO
+% ══════════════════════════════════════════════════════════════════════════════
+\newpage
+\appendix
+\section{Tabla de contribución individual}
+\label{sec:contribucion}
+
+\begin{table}[H]
+  \centering
+  \caption{Distribución de tareas entre los miembros del grupo.
+    \textbf{R}\,=\,responsable principal, \textbf{P}\,=\,participó.}
+  \label{tab:contribucion}
+  \begin{tabularx}{\textwidth}{X c c c}
+    \toprule
+    \rowcolor{azuloscuro!15}
+    \textbf{Tarea} &
+    \textbf{\small Javier G.} &
+    \textbf{\small Miguel Á. V.} &
+    \textbf{\small Martín S.} \\
+    \midrule
+    Exploración del dataset (EDA)           & & & \\
+    \rowcolor{grisclaro}
+    Preprocesamiento (máscara, CLAHE)       & & & \\
+    Dataset class y aumentación             & & & \\
+    \rowcolor{grisclaro}
+    Baseline (EfficientNetBN-B3)            & & & \\
+    Exp. A --- Sobremuestreo                & & & \\
+    \rowcolor{grisclaro}
+    Exp. B --- Radiómica + LR L1            & & & \\
+    Exp. C --- BiomedCLIP zero-shot         & & & \\
+    \rowcolor{grisclaro}
+    Exp. D --- Pipeline dos etapas          & & & \\
+    Exp. E --- Jerárquico tres niveles      & & & \\
+    \rowcolor{grisclaro}
+    Exp. F --- 384\,px + Regresión ordinal  & & & \\
+    Exp. G --- Ben Graham + Hard Mask       & & & \\
+    \rowcolor{grisclaro}
+    Interpretabilidad Grad-CAM             & & & \\
+    Exp. I --- Híbrido CNN + Radiómica      & & & \\
+    \rowcolor{grisclaro}
+    Exp. J --- Pretrain APTOS 2015          & & & \\
+    Redacción de la memoria                 & & & \\
+    \rowcolor{grisclaro}
+    Preparación de la defensa               & & & \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\end{document}

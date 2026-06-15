@@ -1,0 +1,671 @@
+\documentclass[aspectratio=169, 11pt]{beamer}
+
+% ── Tema y colores ────────────────────────────────────────────────────────────
+\usetheme{Madrid}
+\usecolortheme{default}
+\definecolor{azuloscuro}{RGB}{31, 56, 100}
+\definecolor{azulmedio}{RGB}{46, 117, 182}
+\definecolor{verdeok}{RGB}{39, 80, 10}
+\definecolor{rojoko}{RGB}{180, 57, 14}
+\setbeamercolor{structure}{fg=azuloscuro}
+\setbeamercolor{frametitle}{bg=azuloscuro, fg=white}
+\setbeamercolor{title}{bg=azuloscuro, fg=white}
+\setbeamercolor{block title}{bg=azulmedio, fg=white}
+\setbeamercolor{block body}{bg=azuloscuro!5}
+\setbeamercolor{item}{fg=azulmedio}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}{%
+  \leavevmode\hbox{%
+    \begin{beamercolorbox}[wd=.33\paperwidth,ht=2.5ex,dp=1ex,left]{author in head/foot}%
+      \hspace*{2ex}\insertshortauthor
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.34\paperwidth,ht=2.5ex,dp=1ex,center]{title in head/foot}%
+      \insertshorttitle
+    \end{beamercolorbox}%
+    \begin{beamercolorbox}[wd=.33\paperwidth,ht=2.5ex,dp=1ex,right]{date in head/foot}%
+      \insertframenumber{}/\inserttotalframenumber\hspace*{2ex}
+    \end{beamercolorbox}%
+  }%
+}
+
+% ── Paquetes ──────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{colortbl}
+\usepackage{tabularx}
+\usepackage{tikz}
+
+% ── Metadatos ─────────────────────────────────────────────────────────────────
+\title[RD -- Pipeline Completo]{Clasificación Automática de\\Retinopatía Diabética}
+\subtitle{Pipeline Completo de Gradación de Severidad}
+\author[García, Véliz, Solano]{%
+  Javier García Fernández \and
+  Miguel Ángel Véliz Ayala \and
+  Martín Solano Martínez}
+\institute{Procesamiento de Imagen en Medicina --- Curso 2025/2026}
+\date{27 de abril de 2026}
+
+\begin{document}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  PORTADA
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{frame}[plain]
+  \titlepage
+\end{frame}
+
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  SECCIÓN 1: JAVIER — Problema, dataset, pipeline, baseline (~3.5 min)
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Problema y Pipeline}
+
+% ── Slide 1: Contexto clínico ────────────────────────────────────────────────
+\begin{frame}{¿Qué es la retinopatía diabética?}
+  % GUION JAVIER: "La retinopatía diabética es una complicación de la diabetes
+  % que afecta a los vasos de la retina. Es una de las principales causas de
+  % ceguera prevenible. El cribado manual de miles de retinografías es inviable,
+  % por eso necesitamos un sistema automático."
+
+  \begin{columns}[T]
+    \begin{column}{0.52\textwidth}
+      \begin{itemize}
+        \item Complicación microvascular de la diabetes
+        \item Principal causa de \textbf{ceguera prevenible}
+        \item 540M de diabéticos, 35\,\% con afectación retiniana
+        \item Cribado manual inviable $\to$ \textbf{gradación automática}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.44\textwidth}
+      \small
+      \begin{tabular}{cl}
+        \toprule
+        \textbf{Grado} & \textbf{Lesiones clave} \\
+        \midrule
+        G0 & Sin lesiones \\
+        G1 & Microaneurismas \\
+        G2 & Hemorragias, exudados \\
+        G3 & Anomalías venosas extensas \\
+        G4 & Neovascularización \\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+  \end{columns}
+  \vspace{6pt}
+  \centering
+  \includegraphics[width=0.82\textwidth]{figura1.png}
+\end{frame}
+
+% ── Slide 2: Dataset ─────────────────────────────────────────────────────────
+\begin{frame}{Dataset: APTOS 2019}
+  % GUION JAVIER: "Usamos APTOS 2019, 3662 retinografías de clínicas rurales
+  % de la India. El principal problema es el desbalance: G0 es casi la mitad,
+  % G3 solo el 5%. También usamos APTOS 2015 como fuente de datos adicional
+  % para el preentrenamiento."
+
+  \begin{columns}[T]
+    \begin{column}{0.45\textwidth}
+      \textbf{APTOS 2019} --- 3\,662 retinografías
+      \vspace{4pt}
+
+      \small
+      \begin{tabular}{lrr}
+        \toprule
+        \textbf{Clase} & \textbf{Train} & \textbf{\%} \\
+        \midrule
+        G0 Sin RD       & 1\,434 & 48,9\,\% \\
+        G1 Leve         & 300    & 10,2\,\% \\
+        G2 Moderada     & 808    & 27,6\,\% \\
+        \rowcolor{rojoko!15}
+        G3 Severa       & 154    & \textbf{5,3\,\%} \\
+        G4 Proliferativa & 234   & 8,0\,\% \\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.52\textwidth}
+      \includegraphics[width=\textwidth]{desbalance.png}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── Slide 3: Preprocesamiento y augmentación ─────────────────────────────────
+\begin{frame}{Preprocesamiento y Data Augmentation}
+  % GUION JAVIER: "El preprocesamiento tiene 4 pasos: máscara circular para
+  % quitar el fondo negro, CLAHE para mejorar el contraste local, resize
+  % y normalización ImageNet. En augmentación solo aplicamos transformaciones
+  % que tienen sentido anatómico: flip horizontal sí, vertical NO porque
+  % produce una retina imposible."
+
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Preprocesamiento (4 pasos):}
+      \begin{enumerate}
+        \item \textbf{Máscara circular} --- canal verde
+        \item \textbf{CLAHE} --- contraste local (LAB)
+        \item \textbf{Resize} --- 224 o 384\,px
+        \item \textbf{Normalización ImageNet}
+      \end{enumerate}
+      \vspace{4pt}
+      {\small\textit{Nota:} Exp.~G sustituye CLAHE por Ben Graham.}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Augmentación conservadora:}
+      \begin{itemize}
+        \item[\textcolor{verdeok}{\checkmark}] Flip horizontal, rotación $\pm 20^\circ$
+        \item[\textcolor{verdeok}{\checkmark}] Zoom, ruido gaussiano, contraste
+        \item[\textcolor{rojoko}{$\times$}] Flip vertical (anatomía imposible)
+        \item[\textcolor{rojoko}{$\times$}] Rotación $>30^\circ$
+        \item[\textcolor{rojoko}{$\times$}] Padding zeros (crea shortcuts)
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── Slide 4: Métricas y Baseline ─────────────────────────────────────────────
+\begin{frame}{Baseline y métricas}
+  % GUION JAVIER: "Usamos kappa cuadrático ponderado como métrica principal
+  % porque penaliza más confundir G0 con G4 que con G1, y F1 macro para
+  % detectar fallos en clases minoritarias. El baseline es EfficientNet-B3
+  % a 224px con CrossEntropy ponderada. Consigue un kappa de 0.862 que es
+  % bueno, pero al mirar la matriz de confusión vemos que las confusiones
+  % están entre grados adyacentes: ordena bien la gravedad pero no acierta
+  % la etiqueta exacta."
+
+  \begin{columns}[T]
+    \begin{column}{0.45\textwidth}
+      \textbf{Métricas:}
+      \begin{itemize}
+        \item $\kappa^2$: penaliza $(i{-}j)^2$ $\to$ alineada con gravedad clínica
+        \item F1 macro: detecta fallos en minoritarias
+      \end{itemize}
+      \vspace{6pt}
+      \textbf{Baseline:}
+      \begin{itemize}
+        \item EfficientNet-B3 (MONAI, ImageNet)
+        \item 224$\times$224\,px, 20 épocas
+        \item Weighted CrossEntropy
+      \end{itemize}
+      \vspace{6pt}
+      \begin{block}{Resultados baseline}
+        $\kappa^2 = 0{,}862$ \quad F1 $= 0{,}602$
+      \end{block}
+    \end{column}
+    \begin{column}{0.52\textwidth}
+      \includegraphics[width=\textwidth]{baseline_conf_matrix.png}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ══════════════════════════════════════════════════════════════════════════════
+%  SECCIÓN 2: MIGUEL — Exp. A, D, E, F (~3.5 min)
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Experimentos: Desbalance y Regresión Ordinal}
+
+% ── Slide 5: Exp A ───────────────────────────────────────────────────────────
+\begin{frame}{Exp.~A --- Sobremuestreo}
+  \begin{columns}[T]
+    \begin{column}{0.55\textwidth}
+      \textbf{Problema:} Desbalance de clases (G3 = 5\,\%).\\
+      \textbf{Acción:} Replicar filas de clases minoritarias hasta
+      alcanzar al menos el \textbf{12\,\%} de presencia cada una.
+
+      \vspace{6pt}
+      \small
+      \begin{tabular}{lcc}
+        \toprule
+        & \textbf{Baseline} & \textbf{Exp.~A} \\
+        \midrule
+        $\kappa^2$  & 0,862 & \textbf{0,880} \\
+        F1 macro    & 0,602 & \textbf{0,631} \\
+        F1 G2       & 0,715 & \textbf{0,775} \\
+        F1 G3       & 0,276 & 0,286 \\
+        F1 G4       & 0,508 & \textbf{0,561} \\
+        \bottomrule
+      \end{tabular}
+
+      \vspace{8pt}
+      \begin{itemize}
+        \item G2 gran beneficiaria: el modelo se atreve
+              a no refugiarse en G0
+        \item G3 apenas mejora ($+0{,}01$)
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.42\textwidth}
+      \begin{alertblock}{Lección}
+        Replicar datos $\neq$ añadir información.\\[4pt]
+        G3 necesita \textbf{variedad}, no volumen.
+      \end{alertblock}
+      \vspace{4pt}
+      \centering
+      \includegraphics[width=0.85\textwidth]{exp_A_matrix.png}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── Slide 6: Exp D y E ──────────────────────────────────────────────────────
+\begin{frame}{Exp.~D y E --- Pipelines jerárquicos (divide y vencerás)}
+
+  {\small\textbf{Idea:} Cada modelo ve un subproblema más pequeño y equilibrado.}
+
+  \vspace{4pt}
+  \begin{columns}[T]
+    \begin{column}{0.46\textwidth}
+      {\small\textbf{Exp.~D --- Dos etapas}}
+      \vspace{2pt}
+
+      \centering
+      \begin{tikzpicture}[scale=0.85, every node/.style={scale=0.85},
+        box/.style={draw, rounded corners=3pt, minimum height=0.55cm,
+                    minimum width=2.2cm, font=\scriptsize, align=center},
+        arr/.style={->, >=stealth, semithick},
+        lbl/.style={font=\tiny, midway}
+      ]
+        \node[box, fill=azuloscuro!15] (img) at (0,0) {Imagen};
+        \node[box, fill=azulmedio!20] (e1) at (0,-0.95) {Modelo 1: ¿RD?};
+        \node[box, fill=green!15] (g0) at (-1.3,-1.9) {\textbf{G0}};
+        \node[box, fill=azulmedio!20] (e2) at (1.3,-1.9) {Modelo 2: Grado};
+        \node[box, fill=orange!15] (gx) at (1.3,-2.85) {\textbf{G1 G2 G3 G4}};
+
+        \draw[arr] (img) -- (e1);
+        \draw[arr] (e1) -- (g0) node[lbl, left] {Sano};
+        \draw[arr] (e1) -- (e2) node[lbl, right] {RD+};
+        \draw[arr] (e2) -- (gx);
+      \end{tikzpicture}
+    \end{column}
+    \begin{column}{0.50\textwidth}
+      {\small\textbf{Exp.~E --- Tres niveles}}
+      \vspace{2pt}
+
+      \centering
+      \begin{tikzpicture}[scale=0.75, every node/.style={scale=0.75},
+        box/.style={draw, rounded corners=3pt, minimum height=0.5cm,
+                    minimum width=1.8cm, font=\scriptsize, align=center},
+        arr/.style={->, >=stealth, thin},
+        lbl/.style={font=\tiny, midway}
+      ]
+        \node[box, fill=azulmedio!20] (e1) at (0,0) {¿Tiene RD?};
+        \node[box, fill=green!15] (g0) at (-1.6,-0.9) {\textbf{G0}};
+        \node[box, fill=azulmedio!20] (e2) at (1.4,-0.9) {¿Mild/Severe?};
+        \node[box, fill=orange!10] (mild) at (0.2,-1.8) {¿G1/G2?};
+        \node[box, fill=red!10] (sev) at (2.6,-1.8) {¿G3/G4?};
+        \node[box, fill=orange!15] (g12) at (0.2,-2.7) {\textbf{G1/G2}};
+        \node[box, fill=red!15] (g34) at (2.6,-2.7) {\textbf{G3/G4}};
+
+        \draw[arr] (e1) -- (g0) node[lbl, left] {Sano};
+        \draw[arr] (e1) -- (e2) node[lbl, right] {RD+};
+        \draw[arr] (e2) -- (mild) node[lbl, left] {Mild};
+        \draw[arr] (e2) -- (sev) node[lbl, right] {Sev.};
+        \draw[arr] (mild) -- (g12);
+        \draw[arr] (sev) -- (g34);
+      \end{tikzpicture}
+    \end{column}
+  \end{columns}
+
+  \vspace{12pt}
+  \begin{columns}[T]
+    \begin{column}{0.46\textwidth}
+      \centering
+      \scriptsize
+      \begin{tabular}{lcc}
+        \toprule
+        & $\kappa^2$ & F1 \\
+        \midrule
+        Baseline & 0,862 & 0,602 \\
+        Exp.~D   & 0,860 & \textbf{0,631} \\
+        Exp.~E   & 0,855 & 0,602 \\
+        \bottomrule
+      \end{tabular}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{G4 Proliferativa}
+        F1: 0,51 (baseline) $\to$ \textbf{0,59} (Exp.~D)\\
+        \textbf{+16\,\%} en la clase más crítica.
+      \end{block}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── Slide 7: Exp F ───────────────────────────────────────────────────────────
+% ── Slide F.1: Cambios respecto al baseline ──────────────────────────────────
+\begin{frame}{Exp.~F --- 384\,px + Regresión ordinal: cambios en el pipeline}
+
+  {\small\textbf{Dejamos de tratar los grados como clases aisladas
+   y los vemos como una progresión continua.}}
+
+      \vspace{6pt}
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \scriptsize
+      \begin{tabular}{lcc}
+        \toprule
+        & \textbf{Baseline} & \textbf{Exp.~F} \\
+        \midrule
+        Resolución & 224\,px & \textbf{384\,px} \\
+        Cabeza     & 5 neuronas + softmax & \textbf{1 neurona} \\
+        Pérdida    & CrossEntropy & \textbf{MSELoss} \\
+        Inferencia & argmax & \textbf{4 umbrales} \\
+        \bottomrule
+      \end{tabular}
+
+      \vspace{8pt}
+      \begin{block}{\scriptsize ¿Por qué MSELoss?}
+        \scriptsize
+        CrossEntropy: confundir G0$\leftrightarrow$G1 cuesta\\
+        lo mismo que G0$\leftrightarrow$G4.\\[3pt]
+        MSELoss: $(\hat{y}-y)^2$ $\to$ confundir G0 con G4\\
+        cuesta \textbf{16$\times$ más} que con G1.\\[3pt]
+        Misma forma que $\kappa^2$ $\to$ \textbf{loss y métrica alineadas}.
+      \end{block}
+    \end{column}
+    \begin{column}{0.50\textwidth}
+      \includegraphics[width=\textwidth]{exp_F_arquitectura.png}
+
+      \vspace{2pt}
+      {\tiny Umbrales optimizados con Nelder-Mead sobre validación.}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── Slide F.2: Resultados y Grad-CAM ────────────────────────────────────────
+\begin{frame}{Exp.~F --- Resultados e interpretabilidad}
+  \begin{columns}[T]
+    \begin{column}{0.50\textwidth}
+      \begin{block}{Resultados}
+        $\kappa^2 = 0{,}872$ \quad F1 $= 0{,}507$
+      \end{block}
+      \vspace{4pt}
+      \scriptsize
+      \begin{tabular}{lccc}
+        \toprule
+        & \textbf{Baseline} & \textbf{Exp.~F} & \textbf{$\Delta$} \\
+        \midrule
+        $\kappa^2$ & 0,862 & \textbf{0,872} & \textcolor{green!50!black}{+0,01} \\
+        F1 G2      & 0,715 & \textbf{0,671} & \textcolor{red!70!black}{$-$0,04} \\
+        F1 G3      & 0,276 & \textbf{0,317} & \textcolor{green!50!black}{+0,04} \\
+        F1 G4      & 0,508 & 0,158 & \textcolor{red!70!black}{$-$0,35} \\
+        \bottomrule
+      \end{tabular}
+      \vspace{8pt}
+      \begin{alertblock}{\scriptsize Problema grave: G4}
+        \scriptsize
+        De 33 imágenes de G4 en test,\\
+        \textbf{solo detecta 3} (recall = 9\,\%).\\[3pt]
+        MSELoss + desbalance $\to$ compresión\\
+        hacia el centro.
+      \end{alertblock}
+    \end{column}
+    \begin{column}{0.47\textwidth}
+      \centering
+      \includegraphics[width=0.75\textwidth]{grad_cam_exp_F.png}
+      \vspace{3pt}\\
+      {\tiny Grad-CAM Exp.~F: indicios de \textit{shortcut learning}. Motiva Exp.~G.}
+    \end{column}
+  \end{columns}
+\end{frame}
+% ══════════════════════════════════════════════════════════════════════════════
+%  SECCIÓN 3: MARTÍN — Exp. B, C, G, I, J + Conclusiones (~3 min)
+% ══════════════════════════════════════════════════════════════════════════════
+\section{Baselines alternativos, interpretabilidad y conclusiones}
+
+% ── Slide 9: Exp B y C ──────────────────────────────────────────────────────
+\begin{frame}{Exp.~B y C --- ¿Hace falta ajuste fino de CNN en el dominio?}
+  % GUION MARTÍN: "Antes de seguir mejorando el CNN, nos preguntamos: ¿hace
+  % falta? El Exp B usa radiómica clásica con 107 features y regresión
+  % logística L1. El kappa es 0.72, modesto, pero lo valioso es la
+  % interpretabilidad: podemos leer qué features importan para cada grado.
+  % El Exp C usa BiomedCLIP sin entrenar nada: kappa 0.71 con prompts
+  % simples. Ambos quedan 14-15 puntos por debajo del CNN. Conclusión:
+  % sí necesitamos entrenar un modelo específico."
+
+  \begin{columns}[T]
+    % ── Columna izquierda: resumen B y C ────────────────────────────────────
+    \begin{column}{0.40\textwidth}
+      \textbf{Exp.~B --- Radiómica + LR L1}
+      \begin{itemize}
+        \item 107 features (PyRadiomics)
+        \item L1: coef.\ escasos $\to$ legibles
+        \item $\kappa^2 = 0{,}722$ \quad F1 $= 0{,}479$
+      \end{itemize}
+
+      \vspace{8pt}
+      \textbf{Exp.~C --- BiomedCLIP zero-shot}
+      \begin{itemize}
+        \item Sin entrenamiento en APTOS
+        \item Prompts simples: $\kappa^2 = 0{,}711$
+        \item Prompts clínicos: $\kappa^2 = 0{,}515$
+      \end{itemize}
+    \end{column}
+
+    % ── Columna derecha: gráfico de importancia ──────────────────────────────
+    \begin{column}{0.57\textwidth}
+      \centering
+      {\small\textbf{Coef.\ L1 top --- G3 (Severa):}}\\[4pt]
+      \begin{tikzpicture}[x=0.48cm, y=0.54cm]
+        \draw[gray!35, thin] (0,0.1) -- (0,4.6);
+        \draw[gray!35, thin] (-5.2,0.1) -- (4.6,0.1);
+        % 10Percentile: -3.874
+        \fill[rojoko!65] (-3.874,3.6) rectangle (0,4.3);
+        \node[anchor=east, font=\scriptsize] at (-5.0,3.95) {\texttt{10Pctl}};
+        \node[anchor=west, font=\tiny, white] at (-3.75,3.95) {hemorragias $\downarrow$};
+        % HighGrayLevelRunEmphasis: +3.551
+        \fill[verdeok!55] (0,2.6) rectangle (3.551,3.3);
+        \node[anchor=east, font=\scriptsize] at (-5.0,2.95) {\texttt{HiGLRun}};
+        \node[anchor=west, font=\tiny, verdeok!80!black] at (3.65,2.95) {exudados $\uparrow$};
+        % Autocorrelation: +3.145
+        \fill[verdeok!55] (0,1.6) rectangle (3.145,2.3);
+        \node[anchor=east, font=\scriptsize] at (-5.0,1.95) {\texttt{Autocorr}};
+        % ZoneEntropy: +3.050
+        \fill[verdeok!55] (0,0.6) rectangle (3.050,1.3);
+        \node[anchor=east, font=\scriptsize] at (-5.0,0.95) {\texttt{ZoneEntr}};
+        \node[below, font=\tiny, gray!70] at (0,0.1) {$0$};
+      \end{tikzpicture}\\[3pt]
+      {\tiny
+        \textcolor{rojoko!80!black}{$\blacksquare$}~coef.\ negativo ($\downarrow$ intensidad)\quad
+        \textcolor{verdeok!70!black}{$\blacksquare$}~coef.\ positivo ($\uparrow$ intensidad)}
+    \end{column}
+  \end{columns}
+
+  \vspace{8pt}
+  \centering
+  \begin{block}{}
+    \centering
+    Ambos quedan \textbf{14--15 puntos} por debajo del CNN $\to$ el ajuste fino de una CNN en APTOS es imprescindible.
+  \end{block}
+\end{frame}
+
+% ── Slide 10: Exp G ─────────────────────────────────────────────────────────
+\begin{frame}{Exp.~G --- Ben Graham: mejor métrica, peor interpretabilidad}
+  % GUION MARTÍN: "Al ver que el Grad-CAM de F tenía comportamiento mixto,
+  % aplicamos el filtro de Ben Graham, que es un paso alto que quita la
+  % iluminación de fondo. El kappa sube a 0.882, el mejor del proyecto
+  % en ese momento. PERO al hacer Grad-CAM del modelo G, las activaciones
+  % empeoran: se van a la periferia. ¿Por qué? Porque Grad-CAM visualiza
+  % la última capa a 7x7 píxeles, y a esa resolución lo que domina son
+  % los bordes de alto contraste que Graham amplifica. Este es el hallazgo
+  % más importante: mejor métrica no significa modelo más fiable."
+
+  \begin{columns}[T]
+    \begin{column}{0.5\textwidth}
+      \textbf{Acción:}
+      \begin{itemize}
+        \item Filtro Ben Graham (paso alto)
+        \item Máscara dura a nivel de tensor
+        \item Aug.\ solo fotométricas
+      \end{itemize}
+
+      \begin{block}{Resultados}
+        $\kappa^2 = 0{,}882$ (+0,01 vs F)\\
+        F1 $= 0{,}575$
+      \end{block}
+
+      \vspace{4pt}
+      \begin{alertblock}{Hallazgo clave}
+        Grad-CAM \textbf{empeora} respecto a F.\\
+        $\kappa^2 \uparrow$ pero interpretabilidad $\downarrow$
+      \end{alertblock}
+    \end{column}
+    \begin{column}{0.47\textwidth}
+      \begin{center}
+        \begin{columns}[c]
+          \begin{column}{0.48\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{diap11_F.png}\\[2pt]
+            {\tiny Exp.~F: activación mixta}
+          \end{column}
+          \begin{column}{0.48\textwidth}
+            \centering
+            \includegraphics[width=\textwidth]{diap11_G.png}\\[2pt]
+            {\tiny Exp.~G: periferia $\uparrow$}
+          \end{column}
+        \end{columns}
+        \vspace{4pt}
+        {\tiny Grad-CAM última capa (7$\times$7\,px): Graham amplifica bordes $\to$ gradiente periférico.}
+      \end{center}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── Slide 11: Exp I y J ─────────────────────────────────────────────────────
+\begin{frame}{Exp.~I y J --- Fusión y preentrenamiento}
+  % GUION MARTÍN: "El Exp I fusiona las 1536 deep features del CNN con las
+  % 107 radiómicas. El 96.5% de la aportación es del CNN, pero la radiómica
+  % ayuda en las clases difíciles: el F1 sube a 0.631. El Exp J es el que
+  % da el mejor kappa del proyecto: 0.885. Preentrenamos 20 épocas en las
+  % 35 mil imágenes de APTOS 2015 y fine-tuneamos en 2019. Lo revelador
+  % es que desde la primera época de fine-tuning ya alcanza 0.883: el modelo
+  % ya sabe qué es una retina, solo ajusta detalles. Es mucho más resiliente."
+
+  \begin{columns}[T]
+    \begin{column}{0.48\textwidth}
+      \textbf{Exp.~I --- Fusión CNN + Radiómica}
+      \vspace{3pt}
+
+      \begin{center}
+      \begin{tikzpicture}[scale=0.74, every node/.style={scale=0.74},
+        box/.style={draw, rounded corners=3pt, minimum height=0.55cm,
+                    minimum width=2.0cm, font=\scriptsize, align=center},
+        arr/.style={->, >=stealth, semithick}
+      ]
+        \node[box, fill=azuloscuro!15] (img) at (0,0) {Imagen};
+        \node[box, fill=azulmedio!20] (cnn) at (-1.5,-1.0) {CNN (Exp.~G)\\{\tiny 1\,536 feat.}};
+        \node[box, fill=orange!15]    (rad) at ( 1.5,-1.0) {PyRadiomics\\{\tiny 107 feat.}};
+        \node[box, fill=gray!15, minimum width=2.9cm] (lgb) at (0,-2.1)
+              {LightGBM\\{\tiny concat: 1\,643 feat.}};
+        \node[box, fill=verdeok!15, minimum width=3.1cm] (out) at (0,-3.0)
+              {\textbf{G0 · G1 · G2 · G3 · G4}};
+        \draw[arr] (img) -- (cnn);
+        \draw[arr] (img) -- (rad);
+        \draw[arr] (cnn) -- (lgb.north west);
+        \draw[arr] (rad) -- (lgb.north east);
+        \draw[arr] (lgb) -- (out);
+      \end{tikzpicture}
+      \end{center}
+
+      \vspace{2pt}
+      \begin{itemize}
+        \item $\kappa^2 = 0{,}855$ \quad F1 $= 0{,}631$
+        \item 96,5\,\% peso CNN; radiómica ayuda G1, G3
+        \item {\scriptsize $\kappa^2$ cae vs.\ G: LightGBM pierde calibración ordinal}
+      \end{itemize}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \textbf{Exp.~J --- Pretrain APTOS 2015}
+      \vspace{3pt}
+
+      \begin{center}
+      \begin{tikzpicture}[scale=0.74, every node/.style={scale=0.74},
+        box/.style={draw, rounded corners=3pt, minimum height=0.55cm,
+                    minimum width=1.9cm, font=\scriptsize, align=center},
+        arr/.style={->, >=stealth, semithick}
+      ]
+        \node[box, fill=azuloscuro!15] (d15) at (-1.6, 0)    {APTOS 2015\\{\tiny 35\,k imgs}};
+        \node[box, fill=azulmedio!20]  (pre) at (-1.6,-1.05) {Pretrain\\{\tiny 20 épocas}};
+        \node[box, fill=azuloscuro!15] (d19) at ( 1.6, 0)    {APTOS 2019\\{\tiny 3\,k imgs}};
+        \node[box, fill=orange!15]     (ft)  at ( 1.6,-1.05) {Fine-tune\\{\tiny $lr=2{\times}10^{-5}$}};
+        \node[box, fill=verdeok!15, minimum width=3.4cm] (out) at (0,-2.15)
+              {\textbf{G0 · G1 · G2 · G3 · G4}};
+        \draw[arr] (d15) -- (pre);
+        \draw[arr] (d19) -- (ft);
+        \draw[arr] (pre) -- node[above, font=\tiny] {pesos} (ft);
+        \draw[arr] (ft)  -- (out);
+      \end{tikzpicture}
+      \end{center}
+
+      \vspace{2pt}
+      \begin{itemize}
+        \item $\kappa^2 = \mathbf{0{,}885}$ \quad \textbf{Mejor del proyecto}
+        \item Época 1 FT: ya $\kappa^2 = 0{,}883$
+        \item Recall G4: 9\,\% $\to$ 27\,\%
+      \end{itemize}
+    \end{column}
+  \end{columns}
+\end{frame}
+
+% ── Slide 12: Comparativa ────────────────────────────────────────────────────
+\begin{frame}{Comparativa final}
+  % GUION MARTÍN: "Esta tabla resume todo. Arriba el mejor kappa, J con
+  % 0.885. Pero si lo que buscamos es el mejor F1, es el Exp D con 0.631.
+  % Y si buscamos interpretabilidad, es el Exp B. No hay un ganador único:
+  % depende de qué priorizamos."
+
+  \centering
+  \small
+  \begin{tabular}{llcc}
+    \toprule
+    \rowcolor{azuloscuro!15}
+    \textbf{Exp.} & \textbf{Técnica} & $\boldsymbol{\kappa^2}$ & \textbf{F1} \\
+    \midrule
+    \textbf{J} & Pretrain APTOS 2015 $\to$ FT 2019 & \textbf{0,885} & 0,551 \\
+    G & Ben Graham + máscara dura       & 0,882 & 0,575 \\
+    A & Sobremuestreo                   & 0,880 & 0,631 \\
+    F & 384\,px + MSELoss + Nelder-Mead & 0,872 & 0,507 \\
+    \rowcolor{azulmedio!10}
+    Baseline & EfficientNet-B3 + WCE    & 0,862 & 0,602 \\
+    D & Dos etapas                      & 0,860 & \textbf{0,631} \\
+    E & Jerárquico 3 niveles            & 0,855 & 0,602 \\
+    I & CNN + Radiómica (LightGBM)      & 0,855 & 0,631 \\
+    B & Radiómica + LR L1               & 0,722 & 0,479 \\
+    C & BiomedCLIP zero-shot            & 0,711 & 0,354 \\
+    \bottomrule
+  \end{tabular}
+
+  \vspace{6pt}
+  {\footnotesize $\kappa^2 > 0{,}85$ = nivel profesional (APTOS 2019).
+   Todos los modelos CNN entrenados superan el umbral; B y C son métodos sin \textit{fine-tuning} en APTOS.}
+\end{frame}
+
+% ── Slide 13: Conclusiones ──────────────────────────────────────────────────
+\begin{frame}{Conclusiones}
+  % GUION MARTÍN: "Para terminar, cuatro lecciones. Primera: el desbalance
+  % necesita variedad, no volumen. Segunda: dividir el problema ayuda,
+  % especialmente para G4. Tercera, y la más importante: mejor métrica
+  % no implica modelo más fiable, como demuestra la paradoja del Exp G.
+  % Y cuarta: el deep learning sí aporta, pero la radiómica complementa
+  % con interpretabilidad. Gracias."
+
+  \begin{enumerate}
+    \item \textbf{El desbalance necesita variedad, no volumen.}\\
+          {\small Replicar (A) apenas mejora G3; 35\,k imgs reales (J)
+          sí funciona.}
+
+    \item \textbf{Dividir el problema ayuda.}\\
+          {\small Pipeline jerárquico (D): mejor F1 y +16\,\% en G4.}
+
+    \item \textbf{Métrica alta $\neq$ modelo fiable.}\\
+          {\small Exp.~G sube $\kappa^2$ pero empeora Grad-CAM respecto a F.}
+
+    \item \textbf{El entrenamiento específico es imprescindible.}\\
+          {\small Radiómica y zero-shot quedan 14--15 puntos por debajo,
+          pero B aporta interpretabilidad única.}
+  \end{enumerate}
+
+  \vspace{8pt}
+  \centering
+  \large\textbf{¡Gracias! ¿Preguntas?}
+\end{frame}
+
+\end{document}
