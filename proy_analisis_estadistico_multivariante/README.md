@@ -8,8 +8,8 @@ Proyecto académico de análisis estadístico multivariante aplicado a datos rea
 
 | Archivo | Descripción |
 |--------|-------------|
-| `proyecto_multivariante_MUESTRA.pdf` | Informe completo con análisis, gráficos e interpretaciones |
-| `proyecto_multivariante_MUESTRA.qmd` | Documento fuente en Quarto (R + Markdown), reproducible en RStudio |
+| `proyecto_multivariante_MUESTRA.pdf` | Informe *parcial* con algunos análisis, gráficos e interpretaciones |
+| `proyecto_multivariante_MUESTRA.qmd` | Documento fuente *parcial* en Quarto (R + Markdown), reproducible en RStudio |
 | `nba_draft_combine_all_years.csv` | Dataset con medidas físicas de jugadores del Draft NBA (2009–2017) |
 
 ---
