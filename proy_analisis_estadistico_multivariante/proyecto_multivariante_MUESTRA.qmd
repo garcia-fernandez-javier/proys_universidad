@@ -1,0 +1,560 @@
+---
+title: "Proyecto Multivariante"
+author: "Javier García Fernández"
+description: Análisis estadístico multivariante, 2023/24, Grado en Ciencia e Ingeniería de Datos.
+format: pdf
+knitr: 
+  opts_chunk: 
+    warning: false
+    message: false
+editor: visual
+---
+
+# 1. Introducción
+
+Este proyecto consiste en un análisis estadístico aplicando las técnicas vistas en clase a un fichero de datos previamente desconocido. La dirección de donde se obtuvo ndefineddicho fichero es [https://data.world/achou/nba-draft-combine-measu](https://data.world/achou/nba-draft-combine-measurements){.uri}
+
+En este caso, dicho fichero trata sobre la NBA, en concreto sobre las medidas físicas de los jugadores. Se intentará llegar a conclusiones gracias a estas medidas, como qué cualidades son las que hacen que un jugador tenga mayor probabilidad de ser escogido.
+
+Aclarar que las alturas han sido medidas en pulgadas, para pasarlas a metros habría que dividir el valor en pulgadas entre 39.37. Los pesos se encuentran en libras, para pasarlo a kilogramos habría que dividir el valor en libras entre 2.2046.
+
+También es interesante conocer qué significan las variables:
+
+-   **X:** es el índice por el que se ordenan a los jugadores, como el que proporciona R pero este empieza por 0 en vez de por 1.
+
+-   **Player:** esta variable guarda el nombre de los jugadores.
+
+-   **Draft.pick:** esto simboliza el proceso de selección de nuevos jugadores por parte de los equipos cada año. Cuanto menor sea el valor, antes habrá sido elegido, siendo el primero el que tenga valor 1 y así sucesivamente. Si algún individuo no tiene ningún valor, significa que no fue elegido.
+
+-   **Height..No.Shoes.:** representa la altura del jugador sin zapatos.
+
+-   **Height..With.Shoes.:** representa la altura del jugador con zapatos.
+
+-   **Wingspan:** envergadura (distancia desde la punta de los dedos de una mano hasta la punta de los dedos de la otra mano, estando ambos brazos extendidos horizontalmente).
+
+-   **Standing.reach:** esta es la altura máxima con los brazos extendidos hacia arriba sin saltar.
+
+-   **Vertical..Max.:** es la altura máxima del salto.
+
+-   **Vertical..Max.Reach.:** es la altura máxima de salto sumada a la altura del jugador.
+
+-   **Vertical..No.Step.:** es la altura máxima de salto sin salto previo.
+
+-   **Vertical..No.Step.Reach.:** es la altura máxima de salto sumada a la altura del jugador pero sin salto previo.
+
+-   **Weight:** variable que representa el peso de cada individuo.
+
+-   **Body.Fat:** cantidad de grasa corporal de cada jugador.
+
+-   **Hand..Length.:** mide el largo de la mano de cada jugador.
+
+-   **Hand..Width.:** mide la anchura de la mano de cada jugador.
+
+-   **Bench:** número de repeticiones que un jugador puede hacer en el press de banca, levantando 84 kilogramos.
+
+-   **Agility:** mide la agilidad de cada jugador al realizar cierta prueba. El valor proporcionado es el tiempo en dicha prueba.
+
+-   **Sprint:** mide el tiempo que tarda un jugador en correr durante poco tiempo una corta distancia.
+
+```{r, echo=FALSE, results='hide'}
+library(mvtnorm)
+datos_nba <- read.csv(                                                            "C:/Users/USUARIO/Desktop/UNI/GRADO (apuntes, ejercicios, trabajos...)/2º/2º cuatrimestre/Análisis estadístico multivariante/proyecto/nba_draft_combine_all_years.csv")
+
+View(datos_nba)
+head(datos_nba)
+```
+
+### a) Análisis exploratorio
+
+Podemos ver que existen muchos datos faltantes en ciertas columnas, posiblemente porque dichos datos son difíciles de obtener, como por ejemplo la longitud y anchura de la mano. También ocurre que ciertos individuos tienen muchos datos faltantes, posiblemente porque no quieren hacerlos públicos. Teniendo en cuenta todo esto, se procederá a tratar los datos.
+
+```{r, results='hide'}
+summary(datos_nba)
+```
+
+```{r, results='hide'}
+# con esta libreria se hace un resumen mas preciso
+library(Hmisc)
+describe(datos_nba)
+```
+
+Podemos destacar ciertos aspectos, como por ejemplo que contamos con datos del 2009 hasta el 2017. También que el número máximo que se permite escoger en un draft es de 60, por lo que no existe ningún año donde se hayan escogido 61 o más. También podemos ver que de media los jugadores miden 77.61 y pesan de media 214.8 y demás.
+
+Debido a la gran variedad de variables y los datos faltantes, hay que considerar reducir el abanico de posibilidades y tratar los datos con cautela. Primero se va a proceder a contar los datos faltantes para ver si tienen alguna relación o es que no se pudo obtener información en el momento de su recogida.
+
+### b) Limpieza de los datos
+
+```{r, echo=FALSE}
+cont_na <- function(datos, column){
+  valores_na <- (sum(is.na(datos[[column]])))
+  mensaje <- paste(column, "= ", valores_na)
+  return (mensaje)
+}
+cat("DATOS FALTANTES DE CADA VARAIBLE \n")
+cont_na(datos_nba, "X")
+cont_na(datos_nba, "Player")
+cont_na(datos_nba, "Year")
+cont_na(datos_nba, "Draft.pick")
+cont_na(datos_nba, "Height..No.Shoes.")
+cont_na(datos_nba, "Height..With.Shoes.")
+cont_na(datos_nba, "Wingspan")
+cont_na(datos_nba, "Standing.reach")
+cont_na(datos_nba, "Vertical..Max.")
+cont_na(datos_nba, "Vertical..Max.Reach.")
+cont_na(datos_nba, "Vertical..No.Step.")
+cont_na(datos_nba, "Vertical..No.Step.Reach.")
+cont_na(datos_nba, "Weight")
+cont_na(datos_nba, "Body.Fat")
+cont_na(datos_nba, "Hand..Length.")
+cont_na(datos_nba, "Hand..Width.")
+cont_na(datos_nba, "Bench")
+cont_na(datos_nba, "Agility")
+cont_na(datos_nba, "Sprint")
+```
+
+Podemos sacar varias conclusiones a partir de estos datos faltantes:
+
+Que en Draft.pick falten tantos datos es normal, ya que en el contexto de la NBA, en cada draft se escogen a un número de jugadores, pero no a todos, por lo que los Na representan aquellos que estaban en el conjunto de jugadores posibles de elegir pero que finalmente no fueron escogidos.
+
+Si continuamos, que de unos 500 individuos falte el dato de solo 1 en Height..With.Shoes. es algo poco relevante, podemos seguir usando esa columna rellenando al individuo que le falta ese dato con el valor medio de las suelas de zapato, lo cual se puede hacer restando a la altura de cada individuo con zapato su altura sin él, hallar la media resultante y sumar dicho valor al individuo.
+
+```{r, echo=FALSE, results='hide'}
+which(is.na(datos_nba$Height..With.Shoes.)) # el 96
+
+altura_sin_zapatos_media <- mean(datos_nba$Height..No.Shoes., na.rm = TRUE)
+
+altura_con_zapatos_media <-mean(datos_nba$Height..With.Shoes., na.rm = TRUE)
+
+diferencia <- altura_con_zapatos_media - altura_sin_zapatos_media
+
+altura_con_zapatos_media_imputada <- altura_sin_zapatos_media + diferencia
+
+datos_nba$Height..With.Shoes.[96] <- altura_con_zapatos_media_imputada
+```
+
+En Weight solo hay un dato faltante, podemos proceder igual que antes y rellenarlo con la media. Para la grasa podemos afinar un poco más. Hay estudios que parecen apuntar a que para un jugador de baloncesto la cantidad de grasa corporal ronda el 10.5%. Este valor de la grasa corporal varía mucho, pero este método es mejor que usar la media como antes, ya que la grasa corporal depende del peso.
+
+```{r, echo=FALSE, results='hide'}
+which(is.na(datos_nba$Weight)) # el 427
+
+pesos <- mean(datos_nba$Weight, na.rm = TRUE)
+pesos
+
+datos_nba$Weight[427] <- pesos
+```
+
+```{r, echo=FALSE}
+which(is.na(datos_nba$Body.Fat)) # el 96, 427 y 505
+
+datos_nba$Weight[96]
+datos_nba$Weight[96]/2.2046 # pasar a kg
+datos_nba$Weight[96]/2.2046 * 0.105
+datos_nba$Body.Fat[96] <- datos_nba$Weight[96]/2.2046 * 0.105
+
+datos_nba$Weight[427]
+datos_nba$Weight[427]/2.2046 
+datos_nba$Weight[427]/2.2046 * 0.105
+datos_nba$Body.Fat[427] <- datos_nba$Weight[427]/2.2046 * 0.105
+
+datos_nba$Weight[505]
+datos_nba$Weight[505]/2.2046
+datos_nba$Weight[505]/2.2046 * 0.105
+datos_nba$Body.Fat[505] <- datos_nba$Weight[505]/2.2046 * 0.105
+
+```
+
+Algo más interesante ocurre con las columnas "Vertical..." (4), en todas falta el mismo número de individuos con datos, podemos comprobar si esto es casualidad o son el mismo individuo en cada caso con una función.
+
+```{r, results='hide'}
+quien_na <- function(datos, column) {
+  indices_na <- which(is.na(datos[[column]]))
+  return(indices_na)
+}
+
+```
+
+```{r, echo=FALSE, results='hide'}
+sort(quien_na(datos_nba, "Vertical..Max."))
+sort(quien_na(datos_nba, "Vertical..Max.Reach."))
+sort(quien_na(datos_nba, "Vertical..No.Step."))
+sort(quien_na(datos_nba, "Vertical..No.Step.Reach."))
+
+sort(quien_na(datos_nba, "Vertical..Max.")) == 
+  sort(quien_na(datos_nba, "Vertical..Max.Reach."))
+
+sort(quien_na(datos_nba, "Vertical..No.Step.Reach."))==
+  sort(quien_na(datos_nba, "Vertical..No.Step."))
+```
+
+Vemos que entre con y sin salto coinciden, es decir, entre las parejas que consideran la altura con y sin carrerilla respectivamente. Esto parece indicar que, en el caso de que a un individuo le falte algún dato en una de estas 4 variables, le faltará en todas ellas.
+
+```{r, echo=FALSE, results='hide'}
+sort(quien_na(datos_nba, "Vertical..Max.")) == 
+  sort(quien_na(datos_nba, "Vertical..No.Step."))
+
+sort(quien_na(datos_nba, "Vertical..No.Step.Reach."))==
+  sort(quien_na(datos_nba, "Vertical..Max.Reach."))
+```
+
+Pero entre ellos hay algunos que sí y otros que no, por lo que debe haber algún individuo distinto que sí tenga un par y le falte el otro, es decir, que rompa con lo mencionado anteriormente y tenga 2 variables sin datos en lugar de las 4.
+
+```{r, echo=FALSE}
+indices_faltantes <- which(is.na(datos_nba$Vertical..Max.) & 
+                             is.na(datos_nba$Vertical..Max.Reach.) & 
+                             !is.na(datos_nba$Vertical..No.Step.Reach.) & 
+                             !is.na(datos_nba$Vertical..No.Step.))
+
+codigo_individuo <- datos_nba$X[indices_faltantes] + 1
+# sumamos 1 porque los indices de la columna X empiezan en 0
+
+print(codigo_individuo)
+print(datos_nba$Player[codigo_individuo])
+```
+
+Sin embargo, si hay 1 individuo que tiene un par de variables, debe haber otro que tenga el otro par de variables para que el número de datos faltantes coincida en las 4 columnas.
+
+```{r,echo=FALSE}
+indices_faltantes_invertidos <- which(!is.na(datos_nba$Vertical..Max.) & 
+                                        !is.na(datos_nba$Vertical..Max.Reach.) & 
+                                        is.na(datos_nba$Vertical..No.Step.Reach.) & 
+                                        is.na(datos_nba$Vertical..No.Step.))
+
+codigo_individuo_invertido <-
+  datos_nba$X[indices_faltantes_invertidos] + 1
+
+print(codigo_individuo_invertido)
+print(datos_nba$Player[codigo_individuo_invertido])
+```
+
+```{r, echo=FALSE, results='hide'}
+# antes se ha mencionado la necesidad de sumar 1 al 
+# resultado de la columna $X para coincidir con los
+# indices que proporciona R, podemos arreglar esto
+# sumando 1 a la columna y ya no tener que 
+# preocuparnos de esto en adelante
+
+datos_nba$X <- datos_nba$X + 1
+# cuidado con ejecutar esta celda otra vez, 
+# se sumara otro 1 a la columna $X
+```
+
+Llegados a este punto, si ordenamos las columnas, por ejemplo, "Vertical..Max. de mayor a menor, podemos fijarnos que llega un punto en el que practicamente todos los individuos restantes no tienen datos. Uno podría pensar que esto se debe a que estos jugadores son malos o por lo menos los peores entre los que se encuentran, y saltan tan poco que no se les ha tomado ninguna medida de estas variables.
+
+Posteriormente, y cuando se haga un análisis más serio, se podrá comprobar si efectivamente el motivo era este o no tiene nada que ver.
+
+Procedemos igual que antes para ver si existen jugadores en común a quienes les falten ambos datos referidos a la mano.
+
+```{r, echo=FALSE}
+cont_na(datos_nba, "Hand..Length.")
+cont_na(datos_nba, "Hand..Width.")
+```
+
+```{r, echo=FALSE, results='hide'}
+H_length = sort(quien_na(datos_nba, "Hand..Length."))
+H_width = sort(quien_na(datos_nba, "Hand..Width."))
+
+H_length %in% H_width
+```
+
+Podemos ver que los jugadores que no tienen registrados los datos de la longitud de la mano tampoco lo tienen de la anchura de la mano, pero existen 2 individuos que sí tienen la longitud de la mano pero no el ancho. Para estos dos individuos, como solo son dos, se van a rellenar dichos datos faltantes con la media de la anchura de las manos.
+
+```{r, echo=FALSE}
+H_width[!(H_width %in% H_length)]
+```
+
+```{r, echo=FALSE, results='hide'}
+sort(unique(datos_nba$Hand..Width.))
+# podemos ver que no se han medidio con exactitud, 
+# por lo que hay valores discretos
+# para disimular la implantacion artificial de los
+# datos redondearemos el resultado a uno de estos
+
+manos <- mean(datos_nba$Hand..Width., na.rm = TRUE)
+manos # es practicamente 9.4, lo redondearemos a 9.50
+
+datos_nba$Hand..Width.[350] <- 9.50 
+datos_nba$Hand..Width.[358] <- 9.50
+```
+
+Para la variable Bench, el número de datos faltantes es elevado, pues los Na en este caso representan a aquellos jugadores que no han tomado esta prueba. Siguiendo la línea de razonamiento anterior, es posible que se deba a que solo aquellos más prometedores son sometidos a todas las pruebas.
+
+Con Agility y Sprint sucede como con las variables referidas a las manos, vamos a ver si coinciden los individuos.
+
+```{r, echo = FALSE, results='hide'}
+agility = sort(quien_na(datos_nba, "Agility"))
+sprint = sort(quien_na(datos_nba, "Sprint"))
+
+agility %in% sprint
+```
+
+Coinciden bastantes, pero no todos, vamos a ver quiénes son los que le faltan los datos de Agility pero tienen los de Sprint y viceversa, respectivamente. Para que queden con el par de columnas rellenas, podemos añadir otra vez la media en cada una.
+
+```{r, echo=FALSE}
+# los que le faltan los datos de Agility pero tienen los de sprint
+agility[!(agility %in% sprint)] 
+
+# viceversa
+sprint[!(sprint %in% agility)]
+```
+
+```{r, echo=FALSE, results='hide'}
+agili <- mean(datos_nba$Agility, na.rm = TRUE)
+sprin <- mean(datos_nba$Sprint, na.rm = TRUE)
+
+datos_nba$Agility[102] <- agili 
+datos_nba$Agility[103] <- agili
+datos_nba$Agility[137] <- agili 
+datos_nba$Agility[194] <- agili
+datos_nba$Agility[374] <- agili 
+
+datos_nba$Sprint[328] <- sprin 
+datos_nba$Sprint[387] <- sprin
+datos_nba$Sprint[408] <- sprin 
+
+```
+
+Se puede observar que, por ejemplo, la altura sin zapatos y con zapatos tienen una correlación positiva prácticamente perfecta, lo cual no es de extrañar. Podemos eliminar la variable Height..With.Shoes. pues es prácticamente la misma que sin zapatos y encima el grosor de la suela del zapato puede variar constantemente.
+
+También podemos eliminar la variable Vertical..Max.Reach. pues es la suma de Vertical..Max. y Standing.reach, y de igual modo ocurre con la variable Vertical..No.Step.Reach.
+
+```{r, echo=FALSE, results='hide'}
+datos2 <- datos_nba[,-which(names(datos_nba) == "Height..With.Shoes.")]
+datos2 <- datos2[,-which(names(datos2) == "Vertical..Max.Reach.")]
+datos2 <- datos2[,-which(names(datos2) == "Vertical..No.Step.Reach.")]
+
+View(datos2)
+head(datos2)
+```
+
+Llegados a este punto, tenemos dos opciones: quedarnos con aquellas variables que no tienen ningún dato faltante, lo que daría como resultado 5 variables para analizar, o quitar los individuos que tienen datos faltantes.
+
+Esta segunda opción puede ser interesante, pues si nos fijamos en la tabla, y gracias a los pasos previos, normalmente cuando falta algún dato de una variable, suele faltar la de la otra variable relacionada. Por ejemplo, con Vertical..Max. y Vertical..No.Step., o con las medidas de las manos, es decir que se estarían quitando individuos que tienen varios datos faltantes, no distintos, lo cual no es tan malo.
+
+Finalmente, se ha decidido quitar la variable Bench debido a la cantidad de Na's que posee y quitar aquellos individuos con Na's pues suelen tener datos faltantes en más de una variable. Este es un término medio entre eliminar todos los individuos con Na's y todas las variables con Na's.
+
+```{r, echo=FALSE, results='hide'}
+datos2 <- subset(datos2, select = -Bench)
+
+datos_all <- datos2[complete.cases(datos2[5:15]), c(2, 5:15)]
+
+View(datos_all)
+head(datos_all)
+```
+
+Obtenemos un total de 403 individuos con casi todas las variables (11), podemos proceder a hacer el PCA.
+
+# 2. Análisis de componentes principales
+
+Empezamos por analizar las componentes principales, ya que puede ayudarnos a seleccionar aquellas variables más representativas.
+
+### a) Estudio inicial de los datos
+
+Puesto que ya hemos hecho un análisis previo, en este caso nos centraremos en ver otros aspectos que no se han tratado anteriormente, teniendo en cuenta además los datos de los que disponemos ahora.
+
+```{r, echo=FALSE}
+require(graphics)
+pairs(datos_all[2:12], panel = panel.smooth, 
+      main = "NBA draft",pch=20)
+```
+
+Se puede observar que, por ejemplo, existe una correlación lineal positiva bastante fuerte entre las tres primeras variables. También ocurre algo parecido entre los dos tipos de saltos. Algo interesante también y que tiene sentido es que las variables de las manos parecen ser independientes con el resto de variables, menos entre ellas que están un poco correlacionadas. Por último, cabe destacar también una pequeña correlación negativa entre las variables de salto y las de agilidad y sprint.
+
+Podemos hacer también histogramas para estudiar la normalidad de las variables.
+
+```{r, results='hide', fig.keep='none'}
+
+for (i in 2:12) {
+  hist(datos_all[[i]], probability = TRUE, 
+       xlab = names(datos_all)[i], 
+       main = paste(names(datos_all)[i]))
+  
+  curve(dnorm(x, mean(datos_all[[i]]), 
+              sd(datos_all[[i]])), 
+        add = TRUE, col = "red")
+}
+```
+
+Parecen seguir todos una distribución normal, estamos en condiciones de comenzar el análisis PCA.
+
+### b) Análisis de componentes principales
+
+```{r, echo=FALSE, results='hide'}
+PCA <- princomp(datos_all[2:12], cor = TRUE)
+summary(PCA, loadings = TRUE)
+
+PCA$loadings -> L 
+PCA$scores -> S
+```
+
+Con 6 componentes se captura el 90% de la información, por lo que se va a proceder a ver qué significan las dos primeras componentes más representativas. Tener en cuenta que un valor alto positivo de sprint o agilidad no es bueno, quiere decir que el jugador es lento, algo no deseable por lo general.
+
+La pregunta es, ¿Quién influye en Y1? ¿Qué es? ¿A qué jugadores representa?
+
+```{r, echo=FALSE, results='hide'}
+L[,1]
+sort(L[,1])
+sort(abs(L[,1]))
+```
+
+Viendo los coeficientes, podemos decir que los que más influirán en orden descendente serán: Standing.reach, Height..No.Shoes., Wingspan y Weight. En cuanto al resto, podemos ver que todas son positivas, excepto las 2 variables referidas al salto y todas con coeficientes a tener en cuenta, parece que no se puede reducir más en cuanto a variables se refiere.
+
+Según el orden de las variables, al ejecutar L\[,1\], tenemos los siguientes coeficientes:
+
+```{=tex}
+\begin{align*}
+Y_{1} &= 0.368\cdot X_{1}^{*} + 0.367 \cdot X_{2}^{*} + 0.385\cdot X_{3}^{*} - 0.290\cdot X_{4}^{*} \\
+&\quad - 0.223\cdot X_{5}^{*}  + 0.361\cdot X_{6}^{*} + 0.213\cdot X_{7}^{*} + 0.297\cdot X_{8}^{*} \\
+&\quad + 0.195\cdot X_{9}^{*} + 0.263\cdot X_{10}^{*} + 0.271\cdot X_{11}^{*}
+\end{align*}
+```
+```{r, echo=FALSE, results='hide'}
+sort(L[,2])
+sort(abs(L[,2]))
+```
+
+¿Quién influye en Y2? ¿Qué es? ¿A qué jugadores representa?
+
+Esta es prácticamente lo contrario a lo anterior, parece indicar aquellos jugadores que saltan mucho, además de que tienen las variables referidas a la grasa, el sprint y la agilidad negativas, lo cual es bueno también, porque cuanta menos grasa mejor y también quiere decir que son veloces y ágiles. Lo único malo es que, a cambio de la agilidad, no tienen peso pero compensan con el salto, por lo que esta componente parece indicar jugadores veloces y con buen salto, pero no grandes en proporciones corporales.
+
+Podemos comprobar qué atleta es el máximo y mínimo de cada componente principal.
+
+```{r, echo=FALSE, results='hide'}
+which.max(S[,1]) # 31
+which.min(S[,1]) # 160
+
+which.max(S[,2]) # 331
+which.min(S[,2]) # 146
+```
+
+Se corresponden en 31 y 160 y el 331 y 146, respectivamente. Si quisiéramos verlo gráficamente.
+
+```{r, echo=FALSE}
+
+plot(S[,1], ylab = "Y1")
+abline(v = 31, col = "red", lty = 2)
+abline(v = 160, col = "blue", lty = 2)
+
+
+plot(S[,2], ylab = "Y2")
+abline(v = 331, col = "red", lty = 2)
+abline(v = 146, col = "blue", lty = 2)
+```
+
+También podemos hacer un gráfico de las componentes principales, en este caso de la primera y segunda, que son las más representativas.
+
+```{r, echo=FALSE}
+biplot(PCA,pc.biplot=TRUE)
+```
+
+A la vista del gráfico anterior, podemos decir que los jugadores que se encuentran arriba a la izquierda serán buenos saltadores y que corren y tienen poca grasa corporal, aunque no son muy altos ni de grandes dimensiones, por lo que son gente ágil. Por otro lado, aquellos que se encuentren arriba a la derecha serán más equilibrados en cuanto a salto y velocidad, pero altos y con envergadura. Los peores jugadores se encontrarán abajo a la izquierda, pues son los más delgados y con menores proporciones físicas, además de que no saltan ni corren demasiado. Los que se encuentran debajo a la derecha tampoco son demasiado buenos, pero por lo menos son algo más fuertes que los anteriores.
+
+Si quisiéramos buscar a un jugador en específico, por ejemplo a Nolan Smith. Veremos que es normalillo en general.
+
+```{r, echo=FALSE}
+Y1 <- S[,1]
+Y2 <- S[,2]
+
+indice_pca1 <- which(datos_all$Player == "Nolan Smith")
+
+plot(S[,1],S[,2])
+text(S[indice_pca1,1], S[indice_pca1,2] - 0.1, 
+     labels = "Nolan", cex=0.6, col= "red")
+
+points(S[indice_pca1,1], S[indice_pca1,2], 
+       col="red", pch = 19) 
+
+```
+
+Si recordamos la variable Draft.pick, esta nos decía si un jugador había sido seleccionado o no, y de haber sido seleccionado en qué orden. Tiene sentido pensar que aquellos atletas con peores aptitudes físicas serán los no seleccionados (Na), o su valor de Draft.pick será elevado (recordemos que el máximo era 60). Vamos a hacer algunas inferencias para ver si esto es cierto.
+
+Puesto que habíamos dicho que los peores jugadores se encuentran abajo a la izquierda del biplot, podemos coger varios individuos de esta región para confirmar nuestra sospecha.
+
+```{r, echo=FALSE}
+cat("392 =", datos_nba[392, 4], "\n")
+cat("391 =", datos_nba[391, 4], "\n")
+cat("389 =", datos_nba[389, 4], "\n")
+cat("368 =", datos_nba[368, 4], "\n")
+cat("205 =", datos_nba[205, 4], "\n")
+```
+
+Vemos que casi todos son Na menos el 368, pero tienen el índice de selección elevado.
+
+Siguiendo esta linea de razonamiento, los que están arriba deberían haber sido seleccionados y con un valor relativamente pequeño.
+
+```{r, echo=FALSE}
+cat("360 =", datos_nba[360, 4], "\n")
+cat("195 =", datos_nba[195, 4], "\n")
+cat("239 =", datos_nba[239, 4], "\n")
+cat("199 =", datos_nba[199, 4], "\n")
+cat("346 =", datos_nba[346, 4], "\n")
+```
+
+Vemos que todos han sido elegidos, un par con valores elevados. Esto quizás se deba a que son jugadores demasiado extremos (mucha fuerza pero poco salto y/o viceversa).
+
+### c) Número de componentes
+
+Desde un principio parecía interesante quedarnos con 6 componentes principales ya que reduce el número de variables a la mitad y aporta un 90% de información, pero no hemos mirado otro posible número de componentes. Para ello podemos usar diversas reglas.
+
+-   Regla de Rao: solo serán relevantes las componentes que tengan una variabilidad mayor que la variabilidad mínima de las variables originales. En la matriz de correlaciones, esto equivale a que su desviación estándar sea mayor de 1. En este caso obtenemos 2 componentes.
+
+```{r, echo=FALSE}
+PCA$sdev[1:3]
+```
+
+-   Regla del codo: consiste en mirar en qué punto hay un cambio drástico de pérdida de información y después se estabiliza (con cierta pendiente). Al punto resultante habría que quitarle 1, en este caso sale $3 - 1 = 2$, es decir, 2 componentes principales.
+
+```{r, echo=FALSE}
+plot(eigen(cor(datos_all[2:12]))$values, 
+     type = 'l', ylab = "valores propios")
+
+```
+
+-   Prueba de esfericidad: establecemos como hipótesis nula que las variables no están correlacionadas y tienen igual varianza, y como hipótesis alternativa que las variables sí están correlacionadas. Supondremos m = 2, pues parece que 2 componentes serán lo más prometedor.
+
+```{r, echo=FALSE}
+
+eigen(cor(datos_all[2:12]))$values->Lambda
+mean(Lambda[3:11]) -> ma 
+exp(mean(log(Lambda[3:11]))) -> mg
+(403-(2*11+11)/6)*(11-2)*log(ma/mg) -> TB 
+
+0.5*(11-2-1)*(11-2+2) -> gl
+
+p_value <- 1-pchisq(TB, gl)
+p_value
+```
+
+Como el p-valor es menor de 0.05, no podemos afirmar que las variables no están relacionadas, por lo que parece que las variables están correlacionadas entre sí. Si aumentamos el número de componentes a 6, también se obtiene 0, lo que deja entre ver que están correlacionadas.
+
+```{r, echo=FALSE}
+eigen(cor(datos_all[2:12]))$values->Lambda
+mean(Lambda[7:11]) -> ma 
+exp(mean(log(Lambda[7:11]))) -> mg
+(403-(2*11+11)/6)*(11-6)*log(ma/mg) -> TB 
+
+0.5*(11-6-1)*(11-6+2) -> gl
+
+p_value <- 1-pchisq(TB, gl)
+p_value
+```
+
+Por tanto, podríamos trabajar con las dos primeras componentes principales, de las cuales la primera componente usa a todas las variables. Ya que no tenemos demasiadas variables, podemos considerar trabajar con todas ellas y reducir la dimensionalidad del momento en cada caso.
+
+# 3. Análisis clúster
+
+Puesto que no sabemos los grupos en los que se pueden agrupar los individuos, usaremos las técnicas no supervisadas para intentar agruparlos en el número de grupos más prometedor.
+
+### a) Número de grupos
+
+Puesto que son bastantes individuos y en términos de deportes no hay una división clara sino que depende de que se quiera estudiar, el número de grupos puede ser muy arbitrario. En un principio, podría ser sensato considerar 3 grupos para clasificar a aquellos que son buenos, los no tan buenos y los peores que es posible que no hayan sido elegidos en el draft.
+
+Sin embargo, puesto que existen ciertas técnicas que nos pueden ayudar a elegir cuantos grupos escoger, las usaremos como punto de partida, teniendo en cuenta también nuestros intereses.
+
+```{r, echo=FALSE,results='asis'}
+
+# primero escalamos los datos
+ds_all <- as.data.frame(scale(datos_all[2:12]))
+
+library(NbClust)
+NbClust(ds_all,method="complete",index="all")$Best.nc
+```
