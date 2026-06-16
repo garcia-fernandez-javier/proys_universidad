@@ -20,21 +20,21 @@ La base de datos modela una plataforma de streaming musical con cinco tablas:
 
 ```
 usuario ──────────────────────────────────────────────────┐
-  id_usuario (PK) · nombre · email · telefono              │
-  tipo · cuota · invitador (FK→usuario) · ultimo_acceso    │
-         │                                                  │
-         └──► lista ◄──────────────────────────────────────┘
+  id_usuario (PK) · nombre · email · telefono             │
+  tipo · cuota · invitador (FK→usuario) · ultimo_acceso   │
+         │                                                │
+         └──► lista ◄─────────────────────────────────────┘
                 (usuario, num_lista) PK · nombre · descripcion
                          │
                          └──► lista_cancion
                                 (usuario, lista, album, cancion) PK · fecha
 
 banda ◄────────────────────────┐
-  id_artista (PK) · nombre      │
-  pais_origen · a_fundacion     │
-  lider (FK→musico)             │
-                                │
-musico ─────────────────────────┘
+  id_artista (PK) · nombre     │
+  pais_origen · a_fundacion    │
+  lider (FK→musico)            │
+                               │
+musico ────────────────────────┘
   id_musico (PK) · nombre · banda (FK→banda)
 ```
 
