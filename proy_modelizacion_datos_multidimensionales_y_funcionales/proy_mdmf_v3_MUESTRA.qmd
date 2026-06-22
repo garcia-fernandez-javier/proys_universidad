@@ -1,0 +1,191 @@
+---
+title: "Proyecto de Modelización — Cópulas Vine en Activos Financieros"
+author: "Javier García Fernández, Martín Solano Martínez y Miguel Ángel Véliz Ayala"
+format: html
+editor: visual
+execute: 
+  freeze: true
+---
+
+> ⚠️ **Nota:** Este documento es una versión de muestra. Se muestran la estructura, metodología y fragmentos representativos del análisis, pero el código y los resultados completos no están incluidos.
+
+---
+
+# 1. Carga y origen de los datos
+
+Los datos provienen de **Alpha Vantage**, una plataforma con acceso a series temporales de mercados financieros a nivel global. Se trabaja con series ajustadas semanales (`adjusted.close`) de cuatro empresas tecnológicas: **Apple (AAPL), Microsoft (MSFT), Amazon (AMZN) y Google (GOOGL)**.
+
+El `adjusted.close` corrige dividendos y splits, siendo la variable más representativa del retorno económico real para el inversor.
+
+```{r}
+library(httr)
+library(jsonlite)
+
+get_alpha_vantage_data <- function(symbol) {
+  url <- paste0(
+    "https://www.alphavantage.co/query?",
+    "function=TIME_SERIES_WEEKLY_ADJUSTED&",
+    "symbol=", symbol, "&apikey=", api_key
+  )
+  response <- GET(url)
+  data <- fromJSON(rawToChar(response$content))
+  
+  # [Extracción y limpieza de datos...]
+}
+
+symbols <- c("AAPL", "MSFT", "AMZN", "GOOGL")
+```
+
+---
+
+# 2. Preparación y exploración
+
+Los precios en niveles están altamente correlacionados (series integradas). La solución estándar es trabajar con **rendimientos logarítmicos**:
+
+$$r_t = \log(P_t) - \log(P_{t-1})$$
+
+Esta transformación produce series estacionarias cuyas correlaciones son estadísticamente más interesantes.
+
+```{r}
+# Ejemplo: cálculo de rendimientos logarítmicos para Apple
+datos_combinados$return_appl <- c(NA, diff(log(datos_combinados[, 2])))
+```
+
+**Resultado:**
+
+| Par | Pearson | Spearman | Kendall |
+|-----|---------|----------|---------|
+| AAPL–MSFT | ~0.51 | ~0.46 | ~0.32 |
+| AAPL–AMZN | ~0.46 | ~0.42 | ~0.29 |
+| AAPL–GOOGL | ~0.48 | ~0.44 | ~0.30 |
+| MSFT–AMZN | ~0.49 | ~0.44 | ~0.31 |
+| ... | ... | ... | ... |
+
+Las correlaciones de Spearman y Kendall son sistemáticamente inferiores a Pearson, indicando que la relación monotónica es algo más débil que la lineal.
+
+---
+
+# 3. Ajuste de distribuciones marginales
+
+Antes de modelar la dependencia conjunta, cada marginal debe ser ajustada individualmente. Se comparan cuatro candidatos:
+
+```{r}
+library(fitdistrplus)
+library(fGarch)
+library(ghyp)
+
+# Candidatos evaluados para cada activo:
+# - Normal
+# - t-Student generalizada
+# - Laplace  
+# - Hiperbólica Generalizada
+
+# Ejemplo de ajuste para Apple:
+fit_norm_appl  <- fitdist(apple, "norm")
+fit_t_appl     <- fitdist(apple, "std", start = list(mean=..., sd=..., nu=5))
+fit_laplace_appl <- fitdist(apple, "laplace", start = list(location=..., scale=...))
+fit_ghyp_appl  <- fit.ghypuv(data = apple)
+```
+
+**Criterio de selección (AIC/BIC):**
+
+El histograma de los rendimientos revela claramente colas más pesadas que la Normal y alta curtosis. La **t-Student generalizada** resulta la mejor distribución para los cuatro activos, equilibrando bondad de ajuste y parsimonia.
+
+![Histograma de rendimientos de Apple con ajuste Normal vs t-Student](images/hist_apple_ajuste.png)
+
+---
+
+# 4. Transformación a pseudo-observaciones
+
+El **Teorema de Sklar** establece que cualquier distribución multivariante puede factorizarse en sus marginales más una cópula que captura la dependencia:
+
+$$F(x_1, x_2, x_3, x_4) = C(F_1(x_1), F_2(x_2), F_3(x_3), F_4(x_4))$$
+
+Para ello, los datos se transforman al espacio $U[0,1]$ mediante rangos empíricos:
+
+```{r}
+library(VineCopula)
+
+U <- pobs(variables)
+summary(U)
+pairs(U, main="Pseudo-observaciones U[0,1]")
+```
+
+---
+
+# 5. Selección y ajuste de Vine Cópula
+
+Las **Vine cópulas** descomponen la distribución multivariada en cópulas bivariadas organizadas jerárquicamente. Se prueba R-Vine y C-Vine con AIC y BIC:
+
+```{r}
+vine_model <- RVineStructureSelect(
+  data = U, 
+  familyset = NA,
+  type = "RVine",
+  selectioncrit = "AIC",
+  indeptest = TRUE
+)
+summary(vine_model)
+```
+
+**Resultado clave:** La selección automática identifica una **C-Vine con Google (4) como nodo central**.
+
+## Árbol 1: Dependencias directas
+
+Google se empareja directamente con los otros tres activos. Todas las relaciones son modeladas con cópula **t-Student** (familia 2), con bajos grados de libertad (≈ 4–7), confirmando **dependencia de cola significativa**.
+
+```
+Vine structure (Tree 1):
+  4 - 1  (t-Student, τ ≈ 0.38, df ≈ 7.2)
+  4 - 2  (t-Student, τ ≈ 0.37, df ≈ 4.2)
+  4 - 3  (t-Student, τ ≈ 0.36, df ≈ 4.3)
+```
+
+## Árboles 2 y 3: Dependencias condicionales
+
+Una vez descontado el efecto de Google, la dependencia residual entre Apple y Amazon cae a **τ ≈ 0.11**: su comovimiento es casi completamente inducido por el nodo central.
+
+---
+
+# 6. Diagnóstico y validación
+
+```{r}
+set.seed(123)
+gof_result <- RVineGofTest(
+  data = U, 
+  RVM = vine_model, 
+  method = "Breymann", 
+  B = 10000
+)
+print(gof_result)
+```
+
+El modelo supera el test de bondad de ajuste con p > 0.05.
+
+---
+
+# 7. Simulación
+
+Con el modelo validado, se generan muestras sintéticas y se transforman de vuelta a la escala original mediante la CDF inversa de la t-Student:
+
+```{r}
+set.seed(123)
+U_sim <- RVineSim(nsim, vine_model)
+
+# Transformación inversa: escala uniforme → escala original
+X_apple_sim <- fit_t_appl$estimate["mean"] +
+               fit_t_appl$estimate["sd"] *
+               qt(U_sim[, "return_appl"], df = fit_t_appl$estimate["nu"])
+# [Idem para MSFT, AMZN, GOOGL...]
+```
+
+La comparación visual entre datos originales y simulados muestra que el modelo reproduce correctamente la estructura de dependencia multivariante.
+
+---
+
+# 8. Conclusión
+
+- Los rendimientos presentan **colas pesadas** y **curtosis elevada**, haciendo inadecuados los modelos gaussianos.
+- La **C-Vine con Google como nodo central** es seleccionada de forma consistente por AIC y BIC, confirmando a este activo como el principal generador de dependencia en el sector tecnológico.
+- Las cópulas **t-Student** en todos los pares evidencian **dependencia de cola simétrica**: los eventos extremos (caídas o subidas bruscas) tienden a coincidir entre activos.
+- La dependencia condicional entre Apple y Amazon, una vez descontado Google, es casi nula, revelando que su comovimiento es mediado.

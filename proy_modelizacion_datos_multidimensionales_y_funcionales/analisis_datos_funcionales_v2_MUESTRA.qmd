@@ -1,0 +1,229 @@
+---
+title: "Caso práctico 2: Análisis de Datos Funcionales — ENSO y SST del Pacífico"
+author: "Javier García Fernández, Martín Solano Martínez y Miguel Ángel Véliz Ayala"
+format: html
+editor: visual
+execute: 
+  freeze: true
+---
+
+> ⚠️ **Nota:** Este documento es una versión de muestra. Se presenta la estructura metodológica, los fragmentos de código más relevantes y algunas visualizaciones representativas, pero el análisis completo no está incluido.
+
+---
+
+## 1. Introducción
+
+El **Análisis de Datos Funcionales (ADF)** estudia datos observados como funciones a lo largo de un dominio continuo (tiempo, temperatura, frecuencia), en lugar de simples vectores de observaciones discretas. Cada unidad de análisis es una **curva completa**, lo que permite capturar patrones de forma, variabilidad y evolución temporal que los métodos multivariantes clásicos no pueden representar.
+
+La base matemática que justifica tratar funciones como objetos estadísticos es el **espacio de Hilbert**: permite aplicar herramientas como PCA, regresión o clustering en un contexto funcional, con propiedades matemáticas sólidas (ortogonalidad, existencia de mínimos, convergencia).
+
+---
+
+## 2. Conjunto de datos
+
+Los datos corresponden a **índices de temperatura superficial del mar (SST)** en el **Pacífico ecuatorial**, procedentes de **OISST v2.1** (NOAA). Comprenden observaciones **semanales desde 1982 hasta 2025** en cuatro regiones estándar que monitorizan el fenómeno **ENSO (El Niño-Oscilación del Sur)**:
+
+| Región | Localización | Comportamiento |
+|--------|-------------|----------------|
+| **NINO 1+2** | Costa de Sudamérica (0–10°S, 90–80°W) | Máxima volatilidad; zona de afloramiento (*upwelling*) |
+| **NINO 3** | Pacífico Oriental (5°N–5°S, 150–90°W) | Exhibe la Barrera de Predictibilidad de Primavera |
+| **NINO 3.4** | Centro Pacífico (5°N–5°S, 170–120°W) | Estándar oficial de monitoreo ENSO |
+| **NINO 4** | Pacífico Occidental (5°N–5°S, 160°E–150°W) | Mínima variabilidad; "Piscina Cálida" |
+
+Para cada región se dispone de: **SST** (temperatura en °C) y **SSTA** (anomalía = SST observada − promedio histórico).
+
+### 2.1. Carga y preparación
+
+El archivo NOAA tiene un formato de texto plano irregular: cada celda concatena SST y SSTA sin separador explícito (e.g., `20.6-0.1` o `20.6 0.1` cuando la anomalía es positiva). Se desarrolla un pipeline de limpieza específico:
+
+```{r}
+# Lectura línea a línea
+url <- "https://www.cpc.ncep.noaa.gov/data/indices/wksst9120.for"
+raw <- readLines(url)
+raw <- raw[-c(1:4)]  # Eliminar cabeceras NOAA
+
+# Normalizar anomalías positivas: "23.2 0.0" → "23.2+0.0"
+for (i in seq_along(raw)) {
+  raw[i] <- gsub("(\\d+\\.\\d+) (\\d+\\.\\d+)", "\\1+\\2", raw[i])
+}
+```
+
+```{r}
+# Función que descompone "20.6-0.1" o "20.6+0.1" en SST y SSTA
+separar_valor <- function(x) {
+  if (grepl("\\+", x)) {
+    partes <- strsplit(x, "\\+")[[1]]
+    return(c(as.numeric(partes[1]), as.numeric(partes[2])))
+  }
+  match <- regexpr("-[0-9.]+$", x)
+  if (match > 0) {
+    sst  <- substr(x, 1, match - 1)
+    anom <- substr(x, match, nchar(x))
+    return(c(as.numeric(sst), as.numeric(anom)))
+  }
+}
+
+# Función para parsear fechas NOAA "02SEP1981" → (YEAR, WEEK)
+extraer_year_week <- function(week_str) {
+  meses <- c(JAN="01", FEB="02", MAR="03", APR="04",
+             MAY="05", JUN="06", JUL="07", AUG="08",
+             SEP="09", OCT="10", NOV="11", DEC="12")
+  # [parseo de día, mes y año...]
+}
+```
+
+**Decisiones de limpieza adicionales:**
+- Se eliminan los años incompletos (1981 y 2025, con menos de 52 semanas).
+- La semana 53 de los años que la tienen se reasigna como semana 1 del año siguiente, preservando la continuidad temporal sin pérdida de información.
+
+El resultado es un `data.frame` con 10 columnas: `YEAR`, `WEEK`, y pares SST/SSTA para las cuatro regiones.
+
+---
+
+## 3. Idea y objetivos
+
+### Unidad funcional: el año
+
+Se considera cada año como una **curva funcional** $x_i(t)$, donde $t \in \{1, \ldots, 52\}$ son las semanas. Esto proporciona $N > 40$ individuos funcionales, cifra suficiente para inferencia robusta. Tomar las regiones como unidades daría solo $N = 4$, inviable.
+
+### Objetivos principales
+
+1. **Caracterización univariante** por región (media y varianza funcional).
+2. **Comparación este-oeste**: evidenciar el contraste entre NINO 1+2 (volátil) y NINO 4 (estable).
+3. **Análisis sobre anomalías (SSTA)** para aislar la señal climática pura.
+4. **Detección de outliers funcionales** distinguiendo entre outliers de *magnitud* y de *forma*.
+
+---
+
+## 4. Análisis estadístico funcional
+
+### 4.1. Representación cruda
+
+Antes de suavizar, se visualizan las curvas en bruto para inspeccionar la estructura general:
+
+```{r}
+# Reorganizar a matriz: filas = años, columnas = semanas
+matriz <- reshape(
+  df[, c("YEAR", "WEEK", "NINO12")],
+  timevar = "WEEK", idvar = "YEAR", direction = "wide"
+)
+datos <- as.matrix(matriz[, -1])
+
+matplot(t(datos), type = "l", lty = 1, col = rainbow(nrow(datos)),
+        xlab = "Semana", ylab = "Temperatura (°C)",
+        main = "Curvas crudas: NINO12")
+```
+
+**Hallazgos por región:**
+
+- **NINO 1+2:** Estacionalidad muy marcada (oscilación 20–28°C). Las anomalías exhiben la mayor dispersión: eventos extremos superan ±4°C.
+- **NINO 3:** Se observa la *Barrera de Predictibilidad de Primavera* — en las semanas 15–20, todas las curvas convergen, reduciendo drásticamente la varianza antes de dispersarse de nuevo.
+- **NINO 3.4:** Comportamiento intermedio; la barrera de primavera es visible pero menos pronunciada.
+- **NINO 4:** Curvas casi planas (27–30°C todo el año), con anomalías de rango reducido (±1.5°C). Contraste máximo con NINO 1+2.
+
+Con gradiente temporal (azul = años antiguos, rojo = años recientes) se aprecia un **calentamiento asimétrico**: tendencia positiva en NINO 4, ausente en NINO 1+2.
+
+### 4.2. Suavizado funcional
+
+El ADF requiere transformar los datos discretos en funciones continuas. Se aproxima cada curva como:
+
+$$x(t) = \sum_{k=1}^{K} c_k \phi_k(t)$$
+
+Se utilizan **bases de Fourier** (adecuadas para datos con estacionalidad anual) con **penalización en segunda derivada** (rugosidad):
+
+```{r}
+library(fda)
+
+# Selección conjunta de K (nº de bases) y λ (suavizado) por GCV
+nbasis_seq  <- seq(13, 21, by = 2)
+log_lambdas <- seq(-10, 10, by = 0.5)
+lambdas     <- 10^log_lambdas
+
+# Para cada combinación (K, λ):
+basis_fourier <- create.fourier.basis(rangeval = c(1, 52),
+                                      nbasis = nb,
+                                      period = 52)
+fdPar_obj <- fdPar(fdobj = basis_fourier, Lfdobj = 2, lambda = lam)
+fit       <- smooth.basis(argvals = semanas, y = t(y_mat), fdParobj = fdPar_obj)
+
+# Guardar GCV medio y seleccionar el par óptimo (K*, λ*)
+gcv_grid[i, j] <- mean(fit$gcv, na.rm = TRUE)
+```
+
+---
+
+## 5. Temperaturas (SST) — Análisis funcional por región
+
+Para cada una de las 4 regiones se ejecuta el siguiente pipeline. Se muestra aquí el esquema aplicado a **NINO 3.4** como ejemplo representativo:
+
+**a) Media y desviación típica funcional**
+
+```{r}
+# Media funcional
+media_fd <- mean.fd(fd_obj)
+
+# Desviación típica funcional
+sd_fd <- std.fd(fd_obj)
+
+# Visualización
+plot(media_fd, main = "Media funcional NINO3.4",
+     xlab = "Semana", ylab = "Temperatura (°C)", col = "blue", lwd = 2)
+lines(media_fd + 2*sd_fd, col = "red", lty = 2)
+lines(media_fd - 2*sd_fd, col = "red", lty = 2)
+```
+
+La media funcional de NINO 3.4 muestra una ligera curva estacional, con los valores mínimos en torno a la semana 25-30. Las bandas de ±2σ revelan mayor variabilidad en la segunda mitad del año, precisamente donde los eventos El Niño/La Niña tienen mayor impacto.
+
+**b) FPCA — Análisis de Componentes Principales Funcional**
+
+```{r}
+pca_result <- pca.fd(fd_obj, nharm = 4)
+
+# PC1 y PC2 capturan > 90% de la variabilidad en todas las regiones
+# PC1: modo de variación de magnitud (años más cálidos vs más fríos)
+# PC2: modo de variación de forma (timing y velocidad de los eventos)
+```
+
+**c) MS-Plot para detección de outliers funcionales**
+
+El *Magnitude-Shape Plot* separa los años anómalos según si lo son por **magnitud** (temperatura media muy alta/baja) o por **forma** (evolución temporal inusual):
+
+```{r}
+# [Cálculo de profundidad MBD y MS-Plot...]
+```
+
+**Años detectados como outliers:**
+- **1997, 1983:** Outliers por magnitud en NINO 1+2 y NINO 3 (El Niño extremo).
+- **1998, 2016:** Outliers por forma en NINO 3 y NINO 3.4 (años de transición Niño→Niña).
+- **2010:** Outlier en NINO 4 — único evento que perturbó significativamente la "Piscina Cálida".
+- **2017:** Outlier por forma en NINO 1+2 (evolución temporal atípica sin magnitud extrema).
+
+---
+
+## 6. Anomalías (SSTA)
+
+El mismo pipeline se aplica sobre las anomalías SSTA para **filtrar la estacionalidad** y aislar la señal climática pura. Las anomalías permiten distinguir con mayor claridad:
+
+- La **velocidad de inicio** de un evento El Niño/La Niña.
+- La **duración y forma** de la curva durante el evento.
+- El **año de inicio vs. el año de mayor intensidad** (a menudo no coinciden).
+
+```{r}
+library(fda)
+semanas <- 1:52
+
+# El mismo procedimiento de selección GCV y suavizado se aplica
+# sobre las matrices de anomalías NINO12_ANOM, NINO3_ANOM, etc.
+```
+
+---
+
+## Tecnologías
+
+- **R:** `fda`, `dplyr`, `tidyr`, `ggplot2`
+- **Quarto** para renderizado HTML
+
+## Autores
+
+Javier García Fernández · Martín Solano Martínez · Miguel Ángel Véliz Ayala  
+Universidad de Murcia — MDMF, curso 2024/2025
