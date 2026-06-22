@@ -172,5 +172,5 @@ quarto render analisis_datos_funcionales_v2.qmd
 ## 👥 Autores
 
 Javier García Fernández · Martín Solano Martínez · Miguel Ángel Véliz Ayala  
-Grupo — Modelización de Datos Multidimensionales y Funcionales, curso 2024/2025  
+Grupo — Modelización de Datos Multidimensionales y Funcionales, curso 2025/2026  
 Universidad de Murcia
