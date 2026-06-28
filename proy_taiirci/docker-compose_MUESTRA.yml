@@ -1,0 +1,55 @@
+services:
+  mosquitto:
+    image: eclipse-mosquitto:2
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/config/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    # mosquitto.conf debe incluir:
+    #   listener 1883 0.0.0.0
+    #   allow_anonymous true
+    # Sin este fichero Mosquitto sólo escucha en localhost y los clientes
+    # externos (incluido Telegraf en Docker) no pueden conectarse.
+
+  influxdb:
+    image: influxdb:2
+    ports:
+      - "8086:8086"
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=<TU_PASSWORD>
+      - DOCKER_INFLUXDB_INIT_ORG=iot_hub
+      - DOCKER_INFLUXDB_INIT_BUCKET=airq-Javi-Juan
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=<TU_ADMIN_TOKEN>
+      - DOCKER_INFLUXDB_INIT_RETENTION=72h
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+  telegraf:
+    image: telegraf:latest
+    depends_on:
+      - influxdb
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    # NOTA: Telegraf corre en Docker, por lo que 'localhost' se refiere
+    # al propio contenedor. Para conectar con servicios del host usar
+    # la IP de la pasarela Docker: 172.17.0.1
+
+volumes:
+  influxdb-data:
+  grafana-data:
+
+# IMPORTANTE — Tokens de acceso:
+# Generar tokens de mínimo privilegio desde la UI de InfluxDB:
+#   - Token de ESCRITURA para Telegraf (sólo sobre el bucket airq-Javi-Juan)
+#   - Token de LECTURA para Grafana   (sólo sobre el bucket airq-Javi-Juan)
+# Nunca usar el token de administrador en producción.
+# Ver: Load Data → API Tokens → Generate API Token → Custom API Token

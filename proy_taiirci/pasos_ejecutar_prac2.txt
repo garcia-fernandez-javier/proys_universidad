@@ -1,0 +1,56 @@
+PASOS PARA EJECUTAR LA PRÁCTICA 3.1 (PRÁCTICA 2)
+PARTIENDO DE LA INFRAESTRUCTURA DE LA PRÁCTICA 1 YA CONFIGURADA
+
+TERMINAL 1 — Levantar la infraestructura Docker
+cd /opt/aq-iiot-lab
+docker compose up -d
+
+# Verificar que están corriendo mosquitto, influxdb, grafana y telegraf:
+docker ps
+
+# Si telegraf aparece como Exited, es porque el servidor OPC-UA no está levantado todavía.
+# Levantarlo después del paso TERMINAL 2 con:
+docker compose restart telegraf
+
+
+TERMINAL 2 — Servidor OPC-UA
+cd /opt/aq-iiot-lab/python
+source venv/bin/activate
+python3 opcua_server_bridge.py
+
+# Una vez arrancado, volver al TERMINAL 1 y hacer:
+docker compose restart telegraf
+
+
+TERMINAL 3 — Intermediario
+cd /opt/aq-iiot-lab/python
+source venv/bin/activate
+python3 intermediario_suscripcion.py
+
+
+TERMINAL 4 — Scraper
+cd /opt/aq-iiot-lab/python
+source venv/bin/activate
+python3 scraper_mqtt.py
+
+
+TERMINAL 5 — Verificación MQTT (NUEVO EN PRÁCTICA 2)
+# Suscribirse al tópico de Telegraf para verificar que publica en MQTT:
+mosquitto_sub -h localhost -p 1883 -t "telegraf/#" -v
+
+# Deberían llegar mensajes JSON cada 60 segundos con este formato:
+# telegraf/airquality {"fields":{"pm10":7.31,...},"name":"valencia_group",
+# "tags":{"anomaly":"false","asset_id":"triangulo-levante","city":"valencia",
+# "project":"aq-iiot-lab",...},"timestamp":...}
+
+
+TERMINAL 6 - Alarmas
+cd /opt/aq-iiot-lab/python
+source venv/bin/activate
+python3 cep_consumer.py
+python3 cep_consumer_v2.py
+
+
+docker compose stop
+
+EN EL ORDEN ANTERIOR, SIEMPRE
