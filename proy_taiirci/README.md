@@ -41,21 +41,20 @@ El sistema opera con **múltiples frecuencias por capa**, ajustadas a la natural
 
 ```
 .
-├── python/
-│   ├── scraper_mqtt_MUESTRA.py            # Adquisición EEA → MQTT
-│   ├── intermediario_suscripcion_MUESTRA.py  # Pipes and Filters (ruido periódico)
-│   ├── opcua_server_bridge_MUESTRA.py     # Bridge MQTT → OPC-UA
-│   ├── cep_consumer_v2_MUESTRA.py         # Motor CEP con 3 reglas + Telegram
-│   ├── protobuf_serializer_MUESTRA.py     # JSON → Protobuf binario
-│   ├── proto_influx_consumer_MUESTRA.py   # Protobuf → InfluxDB
-│   └── sensor_data_pb2_MUESTRA.py        # Clase generada por protoc
+
+├── scraper_mqtt_MUESTRA.py            # Adquisición EEA → MQTT
+├── intermediario_suscripcion_MUESTRA.py  # Pipes and Filters (ruido periódico)
+├── opcua_server_bridge_MUESTRA.py     # Bridge MQTT → OPC-UA
+├── cep_consumer_v2_MUESTRA.py         # Motor CEP con 3 reglas + Telegram
+├── protobuf_serializer_MUESTRA.py     # JSON → Protobuf binario
+├── proto_influx_consumer_MUESTRA.py   # Protobuf → InfluxDB
+├── sensor_data_pb2_MUESTRA.py        # Clase generada por protoc
 ├── docker-compose_MUESTRA.yml
-├── telegraf/
-│   └── telegraf.conf                      # Configuración Telegraf (no incluida en muestra)
-├── mosquitto/
-│   └── config/
-│       └── mosquitto.conf
-└── README.md
+├── telegraf.conf                      # Configuración Telegraf (no incluida en muestra)
+├── mosquitto.conf
+├── README.md
+├── Memoria Práctica 2 TAIIRCI.pdf
+├── pasos_ejecutar_prac2.txt
 ```
 
 > **Nota sobre los ficheros `_MUESTRA`:** los archivos de código publicados son versiones parciales con la lógica de implementación eliminada. Conservan la estructura completa, los comentarios explicativos y el contrato de cada función (docstring con los pasos a seguir), pero sustituyen los cuerpos de las funciones clave por `raise NotImplementedError` o `pass`. Las memorias completas de ambas prácticas están disponibles en el repositorio.
